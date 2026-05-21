@@ -1,0 +1,6 @@
+{
+  "name": "Asistencia Latina",
+  "description": "Aplicación de registro de asistencia, estadísticas, alertas de ausencias y recordatorios de cumpleaños para la Comunidad Latina.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
