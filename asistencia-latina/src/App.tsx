@@ -409,8 +409,8 @@ export default function App() {
                 <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">{t.homeHeading}</h2>
                 <p className="text-xs text-indigo-100 font-bold tracking-wide mt-2 max-w-lg leading-relaxed">
                   {language === 'es'
-                    ? 'Lleva un registro ordenado del pastoreo, asistencia a sub-ministerios y recordatorios pastorales de la Comunidad Latina.'
-                    : 'Maintain highly dynamic and neat records regarding care logistics, connection cell presence, or upcoming greeting milestones.'}
+                    ? 'Lleva el seguimiento de la asistencia en cada servicio y grupo de la comunidad Latina.'
+                    : 'Track attendance across every service and group of the Latin community.'}
                 </p>
               </div>
 
