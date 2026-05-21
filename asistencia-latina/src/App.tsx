@@ -95,9 +95,9 @@ export default function App() {
   const defaultTracks: EventTrack[] = [
     { id: 'servicio_11', titleEs: '11:00 am', titleEn: '11:00 am', labelEs: 'Servicio Domingo', labelEn: 'Sunday Morning service', type: 'servicio', active: true, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-indigo-600 hover:bg-slate-50' },
     { id: 'servicio_6', titleEs: '6:00 pm', titleEn: '6:00 pm', labelEs: 'Servicio Domingo', labelEn: 'Sunday Evening service', type: 'servicio', active: true, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-violet-500 hover:bg-slate-50' },
-    { id: 'grupo_conexion', titleEs: 'Grupo Conexión', titleEn: 'Connection Group', labelEs: 'Célula Semanal', labelEn: 'Cell connection group', type: 'grupo', active: config.grupos_activos.grupo_conexion, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-emerald-500 hover:bg-slate-50' },
-    { id: 'grupo_hombres', titleEs: 'Grupo Hombres', titleEn: "Men's Group", labelEs: 'Varones', labelEn: "Men's study & fellowship", type: 'grupo', active: config.grupos_activos.grupo_hombres, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-blue-500 hover:bg-slate-50' },
-    { id: 'grupo_mujeres', titleEs: 'Grupo Mujeres', titleEn: "Women's Group", labelEs: 'Damas', labelEn: "Women's study & fellowship", type: 'grupo', active: config.grupos_activos.grupo_mujeres, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-rose-500 hover:bg-slate-50' },
+    { id: 'grupo_conexion', titleEs: 'Grupo Conexión', titleEn: 'Connection Group', labelEs: 'Sábado', labelEn: 'Cell connection group', type: 'grupo', active: config.grupos_activos.grupo_conexion, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-emerald-500 hover:bg-slate-50' },
+    { id: 'grupo_hombres', titleEs: 'Grupo Hombres', titleEn: "Men's Group", labelEs: 'Chicos', labelEn: "Men's study & fellowship", type: 'grupo', active: config.grupos_activos.grupo_hombres, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-blue-500 hover:bg-slate-50' },
+    { id: 'grupo_mujeres', titleEs: 'Grupo Mujeres', titleEn: "Women's Group", labelEs: 'Chicas', labelEn: "Women's study & fellowship", type: 'grupo', active: config.grupos_activos.grupo_mujeres, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-rose-500 hover:bg-slate-50' },
   ];
 
   const allTracks = [...defaultTracks, ...customTracks];
@@ -450,7 +450,7 @@ export default function App() {
                 </span>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { id: 'people', titleEs: 'Directorio', titleEn: 'Directory', count: people.length, icon: Users },
+                    { id: 'people', titleEs: 'Integrantes', titleEn: 'Directory', count: people.length, icon: Users },
                     { id: 'stats', titleEs: 'Estadísticas', titleEn: 'Statistics', icon: TrendingUp },
                     { id: 'alerts', titleEs: 'Alertas', titleEn: 'Alerts', count: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined, icon: AlertTriangle, isAlert: true },
                     { id: 'birthdays', titleEs: 'Cumpleaños', titleEn: 'Birthdays', icon: Cake },
