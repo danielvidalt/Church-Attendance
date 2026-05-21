@@ -271,7 +271,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
 
       <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0" />
 

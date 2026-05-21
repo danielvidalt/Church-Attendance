@@ -213,10 +213,10 @@ export default function AttendanceSheet({
 
   return (
     <div className="font-sans space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm animate-fade-in">
+      <div className="flex flex-col gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm animate-fade-in">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <ClipboardCheck className="w-5.5 h-5.5 text-indigo-650 text-indigo-600" />
+          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <ClipboardCheck className="w-5 h-5 text-indigo-600 shrink-0" />
             <span>{t.registerAttendance}</span>
           </h2>
           <p className="text-xs font-semibold text-slate-500 mt-0.5">
@@ -225,10 +225,9 @@ export default function AttendanceSheet({
         </div>
 
         {/* Quick controls row */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Picker */}
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-            <Calendar className="w-4 h-4 text-slate-500" />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 min-w-0">
+            <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
             <input
               type="date"
               value={selectedDate}
@@ -237,15 +236,15 @@ export default function AttendanceSheet({
                 setSummaryStats(null);
                 setSuccessToast(false);
               }}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer min-w-0 w-full"
             />
           </div>
 
           <button
             onClick={() => setIsNewPersonModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100 cursor-pointer transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100 cursor-pointer transition-colors shrink-0"
           >
-            <Plus className="w-4.5 h-4.5" />
+            <Plus className="w-4 h-4 shrink-0" />
             <span>{t.addPerson}</span>
           </button>
         </div>
