@@ -51,9 +51,9 @@ export default function StatsDashboard({
     const categories: { id: EventType; nameEs: string; nameEn: string; color: string }[] = [
       { id: 'servicio_11', nameEs: 'Domingo 11 AM', nameEn: 'Sunday 11 AM', color: 'bg-indigo-600' },
       { id: 'servicio_6', nameEs: 'Domingo 6 PM', nameEn: 'Sunday 6 PM', color: 'bg-violet-500' },
-      { id: 'grupo_conexion', nameEs: 'Conexión', nameEn: 'Connection', color: 'bg-emerald-500' },
-      { id: 'grupo_hombres', nameEs: 'Hombres', nameEn: 'Men', color: 'bg-blue-500' },
-      { id: 'grupo_mujeres', nameEs: 'Mujeres', nameEn: 'Women', color: 'bg-rose-500' }
+      { id: 'grupo_conexion', nameEs: 'Grupo de conexión', nameEn: 'Connection Group', color: 'bg-emerald-500' },
+      { id: 'grupo_hombres', nameEs: 'Reunión de Hombres', nameEn: "Men's Meeting", color: 'bg-blue-500' },
+      { id: 'grupo_mujeres', nameEs: 'Reunión de Mujeres', nameEn: "Women's Meeting", color: 'bg-rose-500' }
     ];
 
     return categories.map((cat) => {
@@ -132,18 +132,7 @@ export default function StatsDashboard({
       </div>
 
       {/* Numerical Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        
-        {/* Total Registered */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden">
-          <div className="p-3 bg-indigo-50 text-indigo-650 text-indigo-600 rounded-xl">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.totalPeopleInDb}</span>
-            <span className="block text-xl font-extrabold text-slate-900 mt-0.5">{metrics.totalInDb}</span>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-4">
 
         {/* Avg Sunday Attendance */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden">
@@ -153,17 +142,6 @@ export default function StatsDashboard({
           <div>
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.averageAttendance}</span>
             <span className="block text-xl font-extrabold text-slate-900 mt-0.5">{metrics.avgSundayAttendance}</span>
-          </div>
-        </div>
-
-        {/* Retention \% */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.retentionRate}</span>
-            <span className="block text-xl font-extrabold text-slate-900 mt-0.5">{metrics.retentionPercent}%</span>
           </div>
         </div>
 

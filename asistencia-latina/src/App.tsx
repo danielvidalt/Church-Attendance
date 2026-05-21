@@ -219,7 +219,6 @@ export default function App() {
       show: true,
       message: language === 'es' ? '¡Asistencia registrada y guardada exitosamente!' : 'Attendance successfully registered and stored!',
     });
-    setActiveSection('home');
     setTimeout(() => setSuccessToast(null), 4000);
   };
 
