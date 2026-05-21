@@ -237,7 +237,7 @@ export default function App() {
 
   if (appLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="h-full bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black font-mono text-base mx-auto mb-4 animate-pulse">
             CL
@@ -271,7 +271,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
+    <div className="h-full bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-hidden">
 
       <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0" />
 
@@ -293,7 +293,7 @@ export default function App() {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row relative">
+      <div className="flex-1 flex flex-col lg:flex-row relative min-h-0 overflow-hidden">
 
         <nav
           className={`lg:w-64 bg-white text-slate-900 flex flex-col justify-between shrink-0 absolute lg:relative inset-y-0 left-0 z-40 transform lg:transform-none transition-transform duration-300 lg:translate-x-0 border-r border-slate-200 ${
@@ -370,7 +370,7 @@ export default function App() {
           />
         )}
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 max-w-7xl mx-auto w-full overflow-y-auto max-h-screen relative">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full overflow-y-auto overscroll-contain relative">
 
           {successToast?.show && (
             <div className="fixed bottom-6 right-6 z-50 p-4.5 bg-indigo-950 text-white rounded-2xl shadow-xl flex items-center gap-3 border border-indigo-700/50 animate-bounce">

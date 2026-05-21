@@ -56,7 +56,7 @@ export default function LoginScreen({ language, onLanguageChange, onLoginSuccess
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 relative p-4 font-sans selection:bg-indigo-100 animate-fade-in">
+    <div className="h-full overflow-y-auto flex flex-col justify-center items-center bg-slate-50 relative p-4 font-sans selection:bg-indigo-100 animate-fade-in">
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-500" />
 
       <div className="absolute top-6 right-6">
