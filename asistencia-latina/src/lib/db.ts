@@ -16,7 +16,17 @@ export async function addPersona(p: Persona): Promise<void> {
 
 export async function updatePersona(id: string, updates: Partial<Persona>): Promise<void> {
   const { error } = await supabase.from('personas').update(updates).eq('id', id);
-  if (error) throw error;
+  if (error) {
+    // If the error is about a missing column (e.g. nacionalidad not yet added),
+    // retry without that field so other changes are not lost.
+    if (error.message?.includes('column') || error.code === '42703') {
+      const { nacionalidad: _dropped, ...rest } = updates as Partial<Persona> & { nacionalidad?: string };
+      const { error: retryError } = await supabase.from('personas').update(rest).eq('id', id);
+      if (retryError) throw retryError;
+      return;
+    }
+    throw error;
+  }
 }
 
 // ── Eventos ───────────────────────────────────────────────────────────────────

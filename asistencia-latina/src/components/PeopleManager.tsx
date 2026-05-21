@@ -100,7 +100,12 @@ export default function PeopleManager({
       });
       setSelectedPersonId(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as Record<string, unknown>)?.message
+            ? String((err as Record<string, unknown>).message)
+            : JSON.stringify(err);
       setSaveError(msg);
     } finally {
       setSaving(false);
