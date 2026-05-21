@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Language, esTranslations, enTranslations, Usuario } from '../types';
-import { Eye, EyeOff, Lock, Mail, ShieldAlert, Award, UserCheck } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { Eye, EyeOff, Lock, Mail, ShieldAlert } from 'lucide-react';
 
 interface LoginScreenProps {
   language: Language;
@@ -13,65 +14,52 @@ export default function LoginScreen({ language, onLanguageChange, onLoginSuccess
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const t = language === 'es' ? esTranslations : enTranslations;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setLoading(true);
 
-    const lowerEmail = email.toLowerCase().trim();
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
 
-    if (lowerEmail === 'admin@comunidad.org' && password === 'admin123') {
+      if (error || !data.user) {
+        setErrorMsg(t.wrongCredentials);
+        return;
+      }
+
+      // Fetch profile for name and role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nombre, rol, idioma_preferido')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
       onLoginSuccess({
-        id: 'u1',
-        nombre: 'Daniel Vidal (Admin)',
-        email_login: 'admin@comunidad.org',
-        rol: 'administrador',
-        idioma_preferido: language
+        id: data.user.id,
+        nombre: profile?.nombre ?? data.user.email ?? 'Usuario',
+        email_login: data.user.email ?? '',
+        rol: (profile?.rol ?? 'lider') as Usuario['rol'],
+        idioma_preferido: (profile?.idioma_preferido ?? language) as Language,
       });
-    } else if (lowerEmail === 'lider@comunidad.org' && password === 'lider123') {
-      onLoginSuccess({
-        id: 'u2',
-        nombre: 'Líder Gabriel (Asistencia)',
-        email_login: 'lider@comunidad.org',
-        rol: 'lider',
-        idioma_preferido: language
-      });
-    } else {
+    } catch {
       setErrorMsg(t.wrongCredentials);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loginAs = (type: 'admin' | 'lider') => {
-    if (type === 'admin') {
-      setEmail('admin@comunidad.org');
-      setPassword('admin123');
-      onLoginSuccess({
-        id: 'u1',
-        nombre: 'Daniel Vidal (Admin)',
-        email_login: 'admin@comunidad.org',
-        rol: 'administrador',
-        idioma_preferido: language
-      });
-    } else {
-      setEmail('lider@comunidad.org');
-      setPassword('lider123');
-      onLoginSuccess({
-        id: 'u2',
-        nombre: 'Líder Gabriel (Asistencia)',
-        email_login: 'lider@comunidad.org',
-        rol: 'lider',
-        idioma_preferido: language
-      });
-    }
-  };  return (
+  return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 relative p-4 font-sans selection:bg-indigo-100 animate-fade-in">
-      {/* Decorative pastoral backdrops */}
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-500" />
-      
-      {/* Absolute Header Lang Toggle */}
-      <div className="absolute top-6 right-6 flex items-center gap-3">
+
+      <div className="absolute top-6 right-6">
         <select
           value={language}
           onChange={(e) => onLanguageChange(e.target.value as Language)}
@@ -121,7 +109,7 @@ export default function LoginScreen({ language, onLanguageChange, onLoginSuccess
                   placeholder="ejemplo@comunidad.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-indigo-505 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold"
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold"
                 />
               </div>
             </div>
@@ -154,43 +142,15 @@ export default function LoginScreen({ language, onLanguageChange, onLoginSuccess
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 text-sm font-black bg-indigo-650 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-xl transition-all hover:-translate-y-0.5 duration-150 cursor-pointer"
+              disabled={loading}
+              className="w-full py-2.5 px-4 text-sm font-black bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-xl transition-all hover:-translate-y-0.5 duration-150 cursor-pointer"
             >
-              {t.enterBtn}
+              {loading ? (language === 'es' ? 'Entrando...' : 'Signing in...') : t.enterBtn}
             </button>
           </form>
-
-          {/* Quick Demo Access Bar */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <span className="block text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest mb-3">
-              {t.demoAccess}
-            </span>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => loginAs('admin')}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border border-indigo-100 bg-indigo-50/50 hover:bg-indigo-100 hover:text-indigo-800 text-indigo-700 rounded-xl transition-colors cursor-pointer text-center"
-              >
-                <Award className="w-3.5 h-3.5" />
-                <span>Admin Principal</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => loginAs('lider')}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors cursor-pointer text-center"
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Líder / Voluntario</span>
-              </button>
-            </div>
-            <div className="text-[10px] text-center text-slate-400 font-bold mt-4">
-              Admin: <span className="font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded">admin@comunidad.org / admin123</span><br />
-              <div className="mt-1">Líder: <span className="font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded">lider@comunidad.org / lider123</span></div>
-            </div>
-          </div>
         </div>
       </div>
-      
+
       <div className="text-center text-[10px] text-slate-400 font-bold mt-6">
         &copy; {new Date().getFullYear()} Comunidad Latina • {t.tagline}
       </div>
