@@ -45,6 +45,13 @@ export async function deleteAsistenciasByEvento(eventoId: string): Promise<void>
   if (error) throw error;
 }
 
+export async function resetAttendanceData(): Promise<void> {
+  const { error: attError } = await supabase.from('asistencias').delete().neq('id', '');
+  if (attError) throw attError;
+  const { error: evtError } = await supabase.from('eventos').delete().neq('id', '');
+  if (evtError) throw evtError;
+}
+
 export async function insertAsistencias(records: Asistencia[]): Promise<void> {
   if (records.length === 0) return;
   const { error } = await supabase.from('asistencias').insert(records);

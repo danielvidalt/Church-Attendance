@@ -229,10 +229,15 @@ export default function App() {
   };
 
   const handleResetDatabase = async () => {
-    // Reset is disabled in production — data lives in Supabase
     alert(language === 'es'
       ? 'El reinicio de base de datos no está disponible en producción. Gestiona los datos desde el panel de Supabase.'
       : 'Database reset is not available in production. Manage data from the Supabase dashboard.');
+  };
+
+  const handleResetAttendanceData = async () => {
+    await db.resetAttendanceData();
+    setEvents([]);
+    setAttendance([]);
   };
 
   const liveCareAlertsCount = calculateAlerts(people, events, attendance, config).length;
@@ -515,6 +520,7 @@ export default function App() {
               events={events}
               attendance={attendance}
               onNavigateToAlerts={() => setActiveSection('alerts')}
+              onResetAttendanceData={handleResetAttendanceData}
             />
           )}
 
