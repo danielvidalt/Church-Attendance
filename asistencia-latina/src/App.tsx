@@ -499,6 +499,7 @@ export default function App() {
               onAddPersonNote={handleAddPersonNote}
               onUpdatePersonPhoto={handleUpdatePersonPhoto}
               onOpenNewPersonSheet={() => setActiveSection('attendance')}
+              onAddExistingMember={handleAddNewPerson}
             />
           )}
 

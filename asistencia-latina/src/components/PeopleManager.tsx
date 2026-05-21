@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus } from '../types';
-import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera } from 'lucide-react';
+import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera, Users } from 'lucide-react';
+import AddMemberModal from './AddMemberModal';
 
 interface PeopleManagerProps {
   language: Language;
@@ -11,6 +12,7 @@ interface PeopleManagerProps {
   onAddPersonNote: (id: string, noteText: string) => void;
   onUpdatePersonPhoto: (id: string, photoBase64: string | undefined) => void;
   onOpenNewPersonSheet: () => void;
+  onAddExistingMember: (person: Persona) => void;
 }
 
 export default function PeopleManager({
@@ -21,10 +23,13 @@ export default function PeopleManager({
   onUpdatePersonStatus,
   onAddPersonNote,
   onUpdatePersonPhoto,
-  onOpenNewPersonSheet
+  onOpenNewPersonSheet,
+  onAddExistingMember
 }: PeopleManagerProps) {
   const t = language === 'es' ? esTranslations : enTranslations;
+  const es = language === 'es';
 
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | MemberStatus>('all');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -152,13 +157,22 @@ export default function PeopleManager({
           </p>
         </div>
 
-        <button
-          onClick={onOpenNewPersonSheet}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 cursor-pointer transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t.addPerson}</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowAddMemberModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-100 cursor-pointer transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            <span>{es ? 'Agregar al Directorio' : 'Add to Directory'}</span>
+          </button>
+          <button
+            onClick={onOpenNewPersonSheet}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 cursor-pointer transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t.addPerson}</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -279,6 +293,17 @@ export default function PeopleManager({
       </div>
 
       {/* Selected Person Profile Floating Modal overlay */}
+      {showAddMemberModal && (
+        <AddMemberModal
+          language={language}
+          onClose={() => setShowAddMemberModal(false)}
+          onSave={(person) => {
+            onAddExistingMember(person);
+            setShowAddMemberModal(false);
+          }}
+        />
+      )}
+
       {selectedPerson && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
           {/* Backdrop click helper to close modal */}
