@@ -78,7 +78,7 @@ export default function PeopleManager({
       tempPhoto !== selectedPerson.foto_perfil ||
       tempNacionalidad !== (selectedPerson.nacionalidad || '')
     );
-  }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto]);
+  }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto, tempNacionalidad]);
 
   const handleSaveChanges = () => {
     if (!selectedPersonId || !tempNombre.trim()) return;
