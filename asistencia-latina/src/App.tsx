@@ -136,6 +136,11 @@ export default function App() {
     setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, foto_perfil: photoBase64 } : p)));
   };
 
+  const handleUpdatePersona = async (id: string, updates: Partial<Persona>) => {
+    await db.updatePersona(id, updates);
+    setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
   const handleAddNewSeguimientoLog = async (seg: Seguimiento) => {
     await db.addSeguimiento(seg);
     setSeguimientos((prev) => [seg, ...prev]);
@@ -498,6 +503,7 @@ export default function App() {
               onUpdatePersonStatus={handleUpdatePersonStatus}
               onAddPersonNote={handleAddPersonNote}
               onUpdatePersonPhoto={handleUpdatePersonPhoto}
+              onUpdatePersona={handleUpdatePersona}
               onOpenNewPersonSheet={() => setActiveSection('attendance')}
               onAddExistingMember={handleAddNewPerson}
             />

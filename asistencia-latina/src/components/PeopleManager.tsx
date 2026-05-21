@@ -11,6 +11,7 @@ interface PeopleManagerProps {
   onUpdatePersonStatus: (id: string, newStatus: MemberStatus) => void;
   onAddPersonNote: (id: string, noteText: string) => void;
   onUpdatePersonPhoto: (id: string, photoBase64: string | undefined) => void;
+  onUpdatePersona: (id: string, updates: Partial<Persona>) => void;
   onOpenNewPersonSheet: () => void;
   onAddExistingMember: (person: Persona) => void;
 }
@@ -20,9 +21,7 @@ export default function PeopleManager({
   people,
   events,
   attendance,
-  onUpdatePersonStatus,
-  onAddPersonNote,
-  onUpdatePersonPhoto,
+  onUpdatePersona,
   onOpenNewPersonSheet,
   onAddExistingMember
 }: PeopleManagerProps) {
@@ -34,9 +33,14 @@ export default function PeopleManager({
   const [statusFilter, setStatusFilter] = useState<'all' | MemberStatus>('all');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
-  // Unsaved changes tracking for the floating profile modal
-  const [tempStatus, setTempStatus] = useState<MemberStatus | null>(null);
-  const [tempNotes, setTempNotes] = useState<string>('');
+  // Editable fields in the profile modal
+  const [tempNombre, setTempNombre] = useState('');
+  const [tempTelefono, setTempTelefono] = useState('');
+  const [tempFechaNacimiento, setTempFechaNacimiento] = useState('');
+  const [tempFechaPrimeraVisita, setTempFechaPrimeraVisita] = useState('');
+  const [tempSexo, setTempSexo] = useState<'M' | 'F'>('F');
+  const [tempStatus, setTempStatus] = useState<MemberStatus>('activo');
+  const [tempNotes, setTempNotes] = useState('');
   const [tempPhoto, setTempPhoto] = useState<string | undefined>(undefined);
 
   // Selected persona details
@@ -44,43 +48,46 @@ export default function PeopleManager({
     return people.find((p) => p.id === selectedPersonId) || null;
   }, [people, selectedPersonId]);
 
-  // Sync temp state when selecting a new person or when data changes externally
+  // Sync temp state when opening the modal for a person
   useEffect(() => {
     if (selectedPerson) {
+      setTempNombre(selectedPerson.nombre_completo);
+      setTempTelefono(selectedPerson.telefono || '');
+      setTempFechaNacimiento(selectedPerson.fecha_nacimiento || '');
+      setTempFechaPrimeraVisita(selectedPerson.fecha_primera_visita || '');
+      setTempSexo(selectedPerson.sexo);
       setTempStatus(selectedPerson.estado);
       setTempNotes(selectedPerson.notas || '');
       setTempPhoto(selectedPerson.foto_perfil);
-    } else {
-      setTempStatus(null);
-      setTempNotes('');
-      setTempPhoto(undefined);
     }
-  }, [selectedPersonId, selectedPerson]);
+  }, [selectedPersonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasChanges = useMemo(() => {
     if (!selectedPerson) return false;
-    const currentNotes = selectedPerson.notas || '';
-    return tempStatus !== selectedPerson.estado || tempNotes !== currentNotes || tempPhoto !== selectedPerson.foto_perfil;
-  }, [selectedPerson, tempStatus, tempNotes, tempPhoto]);
+    return (
+      tempNombre !== selectedPerson.nombre_completo ||
+      tempTelefono !== (selectedPerson.telefono || '') ||
+      tempFechaNacimiento !== (selectedPerson.fecha_nacimiento || '') ||
+      tempFechaPrimeraVisita !== (selectedPerson.fecha_primera_visita || '') ||
+      tempSexo !== selectedPerson.sexo ||
+      tempStatus !== selectedPerson.estado ||
+      tempNotes !== (selectedPerson.notas || '') ||
+      tempPhoto !== selectedPerson.foto_perfil
+    );
+  }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto]);
 
   const handleSaveChanges = () => {
-    if (!selectedPersonId || !tempStatus) return;
-    
-    // Call parent hooks/callbacks if value differs
-    if (tempStatus !== selectedPerson?.estado) {
-      onUpdatePersonStatus(selectedPersonId, tempStatus);
-    }
-    
-    const trimmedNotes = tempNotes.trim();
-    if (trimmedNotes !== (selectedPerson?.notas || '')) {
-      onAddPersonNote(selectedPersonId, trimmedNotes);
-    }
-
-    if (tempPhoto !== selectedPerson?.foto_perfil) {
-      onUpdatePersonPhoto(selectedPersonId, tempPhoto);
-    }
-    
-    // Close modal on successful save
+    if (!selectedPersonId || !tempNombre.trim()) return;
+    onUpdatePersona(selectedPersonId, {
+      nombre_completo: tempNombre.trim(),
+      telefono: tempTelefono.trim() || undefined,
+      fecha_nacimiento: tempFechaNacimiento || undefined,
+      fecha_primera_visita: tempFechaPrimeraVisita || undefined,
+      sexo: tempSexo,
+      estado: tempStatus,
+      notas: tempNotes.trim() || undefined,
+      foto_perfil: tempPhoto,
+    });
     setSelectedPersonId(null);
   };
 
@@ -306,26 +313,14 @@ export default function PeopleManager({
 
       {selectedPerson && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
-          {/* Backdrop click helper to close modal */}
-          <div 
-            className="absolute inset-0 cursor-pointer" 
-            onClick={() => setSelectedPersonId(null)} 
-          />
-          
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up relative w-full max-w-md z-10 max-h-[90vh] overflow-y-auto">
-            
-            {/* Elegant Header Close Button */}
-            <button
-              onClick={() => setSelectedPersonId(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-              title={language === 'es' ? 'Cerrar' : 'Close'}
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedPersonId(null)} />
 
-            {/* Profile Avatar / Title Section */}
-            <div className="text-center pb-4 border-b border-slate-100 flex flex-col items-center">
-              <div className="relative group w-16 h-16 mb-2">
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl animate-scale-up relative w-full max-w-md z-10 max-h-[90vh] flex flex-col">
+
+            {/* Header fijo */}
+            <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
+              {/* Avatar editable */}
+              <div className="relative group shrink-0">
                 <input
                   type="file"
                   id="modal-edit-avatar-input"
@@ -333,37 +328,18 @@ export default function PeopleManager({
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-
                     const reader = new FileReader();
                     reader.onload = (event) => {
                       const img = new Image();
                       img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 150;
-                        const MAX_HEIGHT = 150;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                          if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                          }
-                        } else {
-                          if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                          }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
+                        const MAX = 150;
+                        let w = img.width, h = img.height;
+                        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
+                        else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                        canvas.width = w; canvas.height = h;
                         const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                          ctx.drawImage(img, 0, 0, width, height);
-                          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                          setTempPhoto(dataUrl);
-                        }
+                        if (ctx) { ctx.drawImage(img, 0, 0, w, h); setTempPhoto(canvas.toDataURL('image/jpeg', 0.85)); }
                       };
                       img.src = event.target?.result as string;
                     };
@@ -373,167 +349,186 @@ export default function PeopleManager({
                 />
                 <label
                   htmlFor="modal-edit-avatar-input"
-                  className="w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center rounded-2xl text-xl font-black shadow-md shadow-indigo-100 cursor-pointer overflow-hidden relative group"
-                  title={language === 'es' ? 'Cambiar foto de perfil' : 'Change profile photo'}
+                  className="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center rounded-2xl text-lg font-black cursor-pointer overflow-hidden relative shadow-md"
                 >
-                  {tempPhoto ? (
-                    <img
-                      src={tempPhoto}
-                      alt={selectedPerson.nombre_completo}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    selectedPerson.nombre_completo.charAt(0)
-                  )}
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-indigo-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="w-5 h-5 text-white animate-pulse" />
+                  {tempPhoto
+                    ? <img src={tempPhoto} alt="" className="w-full h-full object-cover" />
+                    : <span>{tempNombre.charAt(0) || '?'}</span>
+                  }
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-4 h-4 text-white" />
                   </div>
                 </label>
-
                 {tempPhoto && (
-                  <button
-                    type="button"
-                    onClick={() => setTempPhoto(undefined)}
-                    className="absolute -top-1.5 -right-1.5 p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors shadow-sm cursor-pointer"
-                    title={language === 'es' ? 'Eliminar foto' : 'Remove photo'}
-                  >
+                  <button type="button" onClick={() => setTempPhoto(undefined)}
+                    className="absolute -top-1 -right-1 p-0.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-md cursor-pointer">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 )}
               </div>
-              <h3 className="text-xs font-black text-slate-900 mt-1">{selectedPerson.nombre_completo}</h3>
-              <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full font-bold text-[10px] mt-1.5 uppercase tracking-widest">
-                ID: {selectedPerson.id}
-              </span>
 
-              {/* Status Switcher buttons internally to profile sheet */}
-              <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200/50 mt-4">
-                {(['activo', 'nuevo', 'inactivo'] as MemberStatus[]).map((st) => {
-                  const active = tempStatus === st;
-                  return (
-                    <button
-                      key={st}
-                      onClick={() => setTempStatus(st)}
+              {/* Nombre editable */}
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  value={tempNombre}
+                  onChange={(e) => setTempNombre(e.target.value)}
+                  placeholder={es ? 'Nombre completo' : 'Full name'}
+                  className="w-full text-sm font-extrabold text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none pb-0.5 placeholder-slate-300"
+                />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {es ? 'Haz clic para editar' : 'Click to edit'}
+                </span>
+              </div>
+
+              <button onClick={() => setSelectedPersonId(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Cuerpo scrollable */}
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
+
+              {/* Estado */}
+              <div>
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  {es ? 'Estado' : 'Status'}
+                </span>
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200/50">
+                  {(['activo', 'nuevo', 'inactivo'] as MemberStatus[]).map((st) => (
+                    <button key={st} onClick={() => setTempStatus(st)}
                       className={`py-1.5 text-[9px] font-bold uppercase rounded-lg transition-colors cursor-pointer ${
-                        active
-                          ? 'bg-indigo-600 text-white shadow-sm font-black'
-                          : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-                      }`}
-                    >
-                      {st === 'activo' && t.statusActive}
-                      {st === 'nuevo' && t.statusNew}
-                      {st === 'inactivo' && t.statusInactive}
+                        tempStatus === st ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                      }`}>
+                      {st === 'activo' ? t.statusActive : st === 'nuevo' ? t.statusNew : t.statusInactive}
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Personal Details list */}
-            <div className="space-y-3 pb-4 border-b border-slate-100 text-xs font-semibold">
-              <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                {t.contactInfo}
-              </span>
-              
-              {/* Phone */}
-              <div className="flex items-center gap-2.5 text-slate-700">
-                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>
-                  {selectedPerson.telefono || (language === 'es' ? 'No registrado' : 'No recorded')}
-                </span>
-              </div>
-
-              {/* Birthday */}
-              <div className="flex items-center gap-2.5 text-slate-700">
-                <Cake className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>
-                  {selectedPerson.fecha_nacimiento
-                    ? `${selectedPerson.fecha_nacimiento} (${calculateAge(selectedPerson.fecha_nacimiento)} ${t.age})`
-                    : (language === 'es' ? 'No provisto' : 'Not stated')}
-                </span>
-              </div>
-
-              {/* Joined Date */}
-              <div className="flex items-center gap-2.5 text-slate-700">
-                <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>
-                  {t.joinedOn} {selectedPerson.fecha_primera_visita || selectedPerson.fecha_creacion}
-                </span>
-              </div>
-            </div>
-
-            {/* Pastoral notes editing */}
-            <div className="space-y-2 pb-4 border-b border-slate-100 text-xs font-semibold">
-              <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                {t.notesTitle}
-              </span>
-              <textarea
-                value={tempNotes}
-                onChange={(e) => setTempNotes(e.target.value)}
-                placeholder={language === 'es' ? 'Escribe o edita observaciones pastorales...' : 'Write or edit pastoral comments...'}
-                rows={3}
-                className="w-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-505 focus:ring-indigo-500/20 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold placeholder-slate-400 resize-none leading-relaxed font-sans"
-              />
-            </div>
-
-            {/* Attendance Tracker history */}
-            <div className="space-y-2.5 pb-4">
-              <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                {t.historyTitle}
-              </span>
-              {personHistory.length === 0 ? (
-                <div className="text-xs text-slate-400 italic font-medium">
-                  {t.noHistory}
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
-                  {personHistory.map((hist) => (
-                    <div
-                      key={hist.id}
-                      className="flex items-center justify-between text-[11px] py-1.5 border-b border-slate-50 font-semibold"
-                    >
-                      <div className="truncate pr-2">
-                        <span className="font-mono text-slate-400 text-[10px] mr-2">{hist.date}</span>
-                        <span className="text-slate-700">{hist.eventName}</span>
-                      </div>
-                      <span
-                        className={`font-black uppercase tracking-wider text-[9px] px-1.5 py-0.5 rounded ${
-                          hist.present
-                            ? 'bg-green-100 text-green-900'
-                            : 'bg-red-50 text-red-700'
-                        }`}
-                      >
-                        {hist.present ? (language === 'es' ? 'Presente' : 'Checked') : (language === 'es' ? 'Falta' : 'Absent')}
-                      </span>
-                    </div>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Género */}
+              <div>
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  {es ? 'Género' : 'Gender'}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['F', 'M'] as const).map((g) => (
+                    <button key={g} onClick={() => setTempSexo(g)}
+                      className={`py-1.5 text-xs font-bold rounded-xl border cursor-pointer transition-all ${
+                        tempSexo === g ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}>
+                      {g === 'F' ? (es ? 'Femenino 👩' : 'Female 👩') : (es ? 'Masculino 👨' : 'Male 👨')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Datos de contacto */}
+              <div className="space-y-3">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {t.contactInfo}
+                </span>
+
+                {/* Teléfono */}
+                <div className="flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="tel"
+                    value={tempTelefono}
+                    onChange={(e) => setTempTelefono(e.target.value)}
+                    placeholder={es ? 'Teléfono (opcional)' : 'Phone (optional)'}
+                    className="flex-1 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+
+                {/* Fecha de nacimiento */}
+                <div className="flex items-center gap-2.5">
+                  <Cake className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="date"
+                    value={tempFechaNacimiento}
+                    onChange={(e) => setTempFechaNacimiento(e.target.value)}
+                    className="flex-1 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                  {tempFechaNacimiento && (
+                    <span className="text-xs text-slate-400 font-bold shrink-0">
+                      {calculateAge(tempFechaNacimiento)} {t.age}
+                    </span>
+                  )}
+                </div>
+
+                {/* Primera visita */}
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="date"
+                    value={tempFechaPrimeraVisita}
+                    onChange={(e) => setTempFechaPrimeraVisita(e.target.value)}
+                    className="flex-1 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                  <span className="text-[10px] text-slate-400 font-bold shrink-0">
+                    {es ? '1ª visita' : '1st visit'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Notas pastorales */}
+              <div className="space-y-2">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {t.notesTitle}
+                </span>
+                <textarea
+                  value={tempNotes}
+                  onChange={(e) => setTempNotes(e.target.value)}
+                  placeholder={es ? 'Observaciones pastorales...' : 'Pastoral notes...'}
+                  rows={3}
+                  className="w-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-800 font-semibold placeholder-slate-400 resize-none leading-relaxed"
+                />
+              </div>
+
+              {/* Historial de asistencia */}
+              <div className="space-y-2">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {t.historyTitle}
+                </span>
+                {personHistory.length === 0 ? (
+                  <div className="text-xs text-slate-400 italic font-medium">{t.noHistory}</div>
+                ) : (
+                  <div className="space-y-1.5 max-h-[130px] overflow-y-auto pr-1">
+                    {personHistory.map((hist) => (
+                      <div key={hist.id} className="flex items-center justify-between text-[11px] py-1.5 border-b border-slate-50 font-semibold">
+                        <div className="truncate pr-2">
+                          <span className="font-mono text-slate-400 text-[10px] mr-2">{hist.date}</span>
+                          <span className="text-slate-700">{hist.eventName}</span>
+                        </div>
+                        <span className={`font-black uppercase tracking-wider text-[9px] px-1.5 py-0.5 rounded shrink-0 ${
+                          hist.present ? 'bg-green-100 text-green-900' : 'bg-red-50 text-red-700'
+                        }`}>
+                          {hist.present ? (es ? 'Presente' : 'Present') : (es ? 'Falta' : 'Absent')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
 
-            {/* Save Changes Button footer */}
-            <div className="pt-3 border-t border-slate-100 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedPersonId(null)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer"
-              >
-                {language === 'es' ? 'Cancelar' : 'Cancel'}
+            {/* Footer fijo con botones */}
+            <div className="px-6 pb-5 pt-3 border-t border-slate-100 flex gap-2 shrink-0">
+              <button type="button" onClick={() => setSelectedPersonId(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer">
+                {es ? 'Cancelar' : 'Cancel'}
               </button>
-              <button
-                type="button"
-                onClick={handleSaveChanges}
-                disabled={!hasChanges}
+              <button type="button" onClick={handleSaveChanges} disabled={!hasChanges || !tempNombre.trim()}
                 className={`flex-[2] py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-                  hasChanges
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer hover:shadow-md shadow-indigo-650/10'
+                  hasChanges && tempNombre.trim()
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
                     : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                }`}
-              >
+                }`}>
                 <CheckCircle className="w-4 h-4" />
-                <span>{language === 'es' ? 'Guardar Cambios' : 'Save Changes'}</span>
+                <span>{es ? 'Guardar Cambios' : 'Save Changes'}</span>
               </button>
             </div>
 
