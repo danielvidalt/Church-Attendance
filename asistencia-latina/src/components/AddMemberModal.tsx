@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Language, Persona, MemberStatus } from '../types';
 import { X, Users, Camera } from 'lucide-react';
 import { formatDate } from '../utils/attendance';
+import { COUNTRIES } from '../data/countries';
 
 interface AddMemberModalProps {
   language: Language;
@@ -20,6 +21,7 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
   const [fechaPrimeraVisita, setFechaPrimeraVisita] = useState('');
   const [nota, setNota] = useState('');
   const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(undefined);
+  const [nacionalidad, setNacionalidad] = useState('');
   const [errorName, setErrorName] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +67,7 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
       sexo,
       notas: nota.trim() || undefined,
       foto_perfil: fotoPerfil,
+      nacionalidad: nacionalidad || undefined,
     };
 
     onSave(newPerson);
@@ -241,6 +244,25 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
               onChange={(e) => setFechaPrimeraVisita(e.target.value)}
               className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-800/10 focus:border-emerald-700 transition-all font-medium"
             />
+          </div>
+
+          {/* Nacionalidad */}
+          <div>
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
+              {es ? 'Nacionalidad' : 'Nationality'} ({es ? 'opcional' : 'optional'})
+            </label>
+            <select
+              value={nacionalidad}
+              onChange={(e) => setNacionalidad(e.target.value)}
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-800/10 focus:border-emerald-700 transition-all font-medium text-slate-800 cursor-pointer"
+            >
+              <option value="">{es ? '— Selecciona un país —' : '— Select a country —'}</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.flag} {es ? c.nameEs : c.nameEn}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Notes */}

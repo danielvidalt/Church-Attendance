@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Language, esTranslations, enTranslations, EventType, Persona } from '../types';
 import { X, UserPlus, Info, Camera } from 'lucide-react';
 import { formatDate } from '../utils/attendance';
+import { COUNTRIES } from '../data/countries';
 
 interface NewPersonModalProps {
   language: Language;
@@ -22,6 +23,7 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
   const [nota, setNota] = useState('');
   const [errorName, setErrorName] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(undefined);
+  const [nacionalidad, setNacionalidad] = useState('');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,7 +87,8 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
       estado: isFirstCheck === 'yes' ? 'nuevo' : 'activo',
       sexo,
       notas: nota.trim() || undefined,
-      foto_perfil: fotoPerfil
+      foto_perfil: fotoPerfil,
+      nacionalidad: nacionalidad || undefined,
     };
 
     onSave(createdPerson, true); // Save person and pre-mark them as present/attended
@@ -298,6 +301,25 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
               <option value="grupo_conexion">{language === 'es' ? 'Grupo de conexión' : 'Connection Group'}</option>
               <option value="grupo_hombres">{language === 'es' ? 'Grupo de hombres' : 'Men\'s Group'}</option>
               <option value="grupo_mujeres">{language === 'es' ? 'Grupo de mujeres' : 'Women\'s Group'}</option>
+            </select>
+          </div>
+
+          {/* Nacionalidad */}
+          <div>
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
+              {language === 'es' ? 'Nacionalidad' : 'Nationality'} ({language === 'es' ? 'opcional' : 'optional'})
+            </label>
+            <select
+              value={nacionalidad}
+              onChange={(e) => setNacionalidad(e.target.value)}
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-800/10 focus:border-blue-800 cursor-pointer text-slate-800 font-semibold"
+            >
+              <option value="">{language === 'es' ? '— Selecciona un país —' : '— Select a country —'}</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.flag} {language === 'es' ? c.nameEs : c.nameEn}
+                </option>
+              ))}
             </select>
           </div>
 

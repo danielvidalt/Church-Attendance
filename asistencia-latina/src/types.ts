@@ -15,6 +15,7 @@ export interface Persona {
   sexo: 'M' | 'F'; // To automatically know if Men's or Women's group is applicable
   notas?: string;
   foto_perfil?: string; // profile photo as base64 data URL
+  nacionalidad?: string; // ISO 3166-1 alpha-2 country code e.g. "CO"
 }
 
 export interface Evento {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus } from '../types';
-import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera, Users } from 'lucide-react';
+import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera, Users, Globe } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
+import { COUNTRIES, getCountryLabel } from '../data/countries';
 
 interface PeopleManagerProps {
   language: Language;
@@ -42,6 +43,7 @@ export default function PeopleManager({
   const [tempStatus, setTempStatus] = useState<MemberStatus>('activo');
   const [tempNotes, setTempNotes] = useState('');
   const [tempPhoto, setTempPhoto] = useState<string | undefined>(undefined);
+  const [tempNacionalidad, setTempNacionalidad] = useState('');
 
   // Selected persona details
   const selectedPerson = useMemo(() => {
@@ -59,6 +61,7 @@ export default function PeopleManager({
       setTempStatus(selectedPerson.estado);
       setTempNotes(selectedPerson.notas || '');
       setTempPhoto(selectedPerson.foto_perfil);
+      setTempNacionalidad(selectedPerson.nacionalidad || '');
     }
   }, [selectedPersonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -72,7 +75,8 @@ export default function PeopleManager({
       tempSexo !== selectedPerson.sexo ||
       tempStatus !== selectedPerson.estado ||
       tempNotes !== (selectedPerson.notas || '') ||
-      tempPhoto !== selectedPerson.foto_perfil
+      tempPhoto !== selectedPerson.foto_perfil ||
+      tempNacionalidad !== (selectedPerson.nacionalidad || '')
     );
   }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto]);
 
@@ -87,6 +91,7 @@ export default function PeopleManager({
       estado: tempStatus,
       notas: tempNotes.trim() || undefined,
       foto_perfil: tempPhoto,
+      nacionalidad: tempNacionalidad || undefined,
     });
     setSelectedPersonId(null);
   };
@@ -275,6 +280,11 @@ export default function PeopleManager({
                             ) : (
                               <span className="text-[11px]">👨</span>
                             )}
+                            {person.nacionalidad && (
+                              <span className="text-[13px]" title={getCountryLabel(person.nacionalidad, language)}>
+                                {COUNTRIES.find(c => c.code === person.nacionalidad)?.flag}
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] font-semibold text-slate-400 mt-0.5">
                             {person.telefono || (language === 'es' ? 'Sin teléfono' : 'No phone')}
@@ -456,6 +466,23 @@ export default function PeopleManager({
                       {calculateAge(tempFechaNacimiento)} {t.age}
                     </span>
                   )}
+                </div>
+
+                {/* Nacionalidad */}
+                <div className="flex items-center gap-2.5">
+                  <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={tempNacionalidad}
+                    onChange={(e) => setTempNacionalidad(e.target.value)}
+                    className="flex-1 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value="">{es ? '— País —' : '— Country —'}</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {es ? c.nameEs : c.nameEn}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Primera visita */}
