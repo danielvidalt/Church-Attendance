@@ -44,6 +44,8 @@ export default function PeopleManager({
   const [tempNotes, setTempNotes] = useState('');
   const [tempPhoto, setTempPhoto] = useState<string | undefined>(undefined);
   const [tempNacionalidad, setTempNacionalidad] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Selected persona details
   const selectedPerson = useMemo(() => {
@@ -80,20 +82,29 @@ export default function PeopleManager({
     );
   }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto, tempNacionalidad]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!selectedPersonId || !tempNombre.trim()) return;
-    onUpdatePersona(selectedPersonId, {
-      nombre_completo: tempNombre.trim(),
-      telefono: tempTelefono.trim() || undefined,
-      fecha_nacimiento: tempFechaNacimiento || undefined,
-      fecha_primera_visita: tempFechaPrimeraVisita || undefined,
-      sexo: tempSexo,
-      estado: tempStatus,
-      notas: tempNotes.trim() || undefined,
-      foto_perfil: tempPhoto,
-      nacionalidad: tempNacionalidad || undefined,
-    });
-    setSelectedPersonId(null);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onUpdatePersona(selectedPersonId, {
+        nombre_completo: tempNombre.trim(),
+        telefono: tempTelefono.trim() || undefined,
+        fecha_nacimiento: tempFechaNacimiento || undefined,
+        fecha_primera_visita: tempFechaPrimeraVisita || undefined,
+        sexo: tempSexo,
+        estado: tempStatus,
+        notas: tempNotes.trim() || undefined,
+        foto_perfil: tempPhoto,
+        nacionalidad: tempNacionalidad || undefined,
+      });
+      setSelectedPersonId(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSaveError(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Compute filtered people list
@@ -543,20 +554,27 @@ export default function PeopleManager({
             </div>
 
             {/* Footer fijo con botones */}
-            <div className="px-6 pb-5 pt-3 border-t border-slate-100 flex gap-2 shrink-0">
-              <button type="button" onClick={() => setSelectedPersonId(null)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer">
-                {es ? 'Cancelar' : 'Cancel'}
-              </button>
-              <button type="button" onClick={handleSaveChanges} disabled={!hasChanges || !tempNombre.trim()}
-                className={`flex-[2] py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-                  hasChanges && tempNombre.trim()
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                }`}>
-                <CheckCircle className="w-4 h-4" />
-                <span>{es ? 'Guardar Cambios' : 'Save Changes'}</span>
-              </button>
+            <div className="px-6 pb-5 pt-3 border-t border-slate-100 shrink-0 space-y-2">
+              {saveError && (
+                <p className="text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                  {es ? 'Error al guardar: ' : 'Save error: '}{saveError}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setSelectedPersonId(null); setSaveError(null); }}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer">
+                  {es ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button type="button" onClick={handleSaveChanges} disabled={!hasChanges || !tempNombre.trim() || saving}
+                  className={`flex-[2] py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                    hasChanges && tempNombre.trim() && !saving
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                  }`}>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{saving ? (es ? 'Guardando...' : 'Saving...') : (es ? 'Guardar Cambios' : 'Save Changes')}</span>
+                </button>
+              </div>
             </div>
 
           </div>
