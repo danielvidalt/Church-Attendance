@@ -13,14 +13,24 @@ import AlertsManager from './components/AlertsManager';
 import BirthdaysList from './components/BirthdaysList';
 import ConfigScreen from './components/ConfigScreen';
 
-import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Home, Menu, X, ArrowLeft } from 'lucide-react';
+import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Home, Menu, X, ArrowLeft, Sun, Moon } from 'lucide-react';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cl-dark-mode') === 'true');
   const [language, setLanguage] = useState<Language>('es');
   const [user, setUser] = useState<Usuario | null>(null);
   const [activeSection, setActiveSection] = useState<'home' | 'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'config'>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      localStorage.setItem('cl-dark-mode', String(next));
+      return next;
+    });
+  };
 
   const [people, setPeople] = useState<Persona[]>([]);
   const [events, setEvents] = useState<Evento[]>([]);
@@ -242,11 +252,28 @@ export default function App() {
 
   const liveCareAlertsCount = calculateAlerts(people, events, attendance, config).length;
 
+  // ── Splash screen ─────────────────────────────────────────────────────────────
+
+  if (showSplash) {
+    return (
+      <div
+        className={`h-full w-full cursor-pointer select-none ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
+        onClick={() => setShowSplash(false)}
+      >
+        <img
+          src={isDarkMode ? '/splash-dark.png' : '/splash-light.png'}
+          alt="Comunidad Latina"
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
   // ── Loading screen ────────────────────────────────────────────────────────────
 
   if (appLoading) {
     return (
-      <div className="h-full bg-slate-50 flex items-center justify-center">
+      <div className={`h-full flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black font-mono text-base mx-auto mb-4 animate-pulse">
             CL
@@ -261,11 +288,13 @@ export default function App() {
 
   if (user === null) {
     return (
-      <LoginScreen
-        language={language}
-        onLanguageChange={(lang) => setLanguage(lang)}
-        onLoginSuccess={handleLoginSuccess}
-      />
+      <div className={isDarkMode ? 'dark h-full' : 'h-full'}>
+        <LoginScreen
+          language={language}
+          onLanguageChange={(lang) => setLanguage(lang)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </div>
     );
   }
 
@@ -280,7 +309,7 @@ export default function App() {
   ];
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-hidden">
+    <div className={`h-full flex flex-col font-sans overflow-hidden ${isDarkMode ? 'dark bg-slate-950 text-slate-100 selection:bg-indigo-900 selection:text-indigo-100' : 'bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900'}`}>
 
       <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0" />
 
@@ -294,12 +323,21 @@ export default function App() {
             <span className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest mt-1 block">{t.tagline}</span>
           </div>
         </div>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleDarkMode}
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+            title={isDarkMode ? 'Modo Claro' : 'Modo Oscuro'}
+          >
+            {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col lg:flex-row relative min-h-0 overflow-hidden">
@@ -361,7 +399,14 @@ export default function App() {
             </div>
           </div>
 
-          <div className="p-3 border-t border-slate-100">
+          <div className="p-3 border-t border-slate-100 space-y-1">
+            <button
+              onClick={toggleDarkMode}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors cursor-pointer"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
+              <span>{isDarkMode ? (language === 'es' ? 'Modo Claro' : 'Light Mode') : (language === 'es' ? 'Modo Oscuro' : 'Dark Mode')}</span>
+            </button>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
