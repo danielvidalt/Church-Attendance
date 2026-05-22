@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus } from '../types';
-import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera, Users, Globe } from 'lucide-react';
+import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera, Users, Globe, Trash2 } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
 import { COUNTRIES, getCountryLabel } from '../data/countries';
 
@@ -13,6 +13,7 @@ interface PeopleManagerProps {
   onAddPersonNote: (id: string, noteText: string) => void;
   onUpdatePersonPhoto: (id: string, photoBase64: string | undefined) => void;
   onUpdatePersona: (id: string, updates: Partial<Persona>) => void;
+  onDeletePersona: (id: string) => Promise<void>;
   onOpenNewPersonSheet: () => void;
   onAddExistingMember: (person: Persona) => void;
 }
@@ -23,6 +24,7 @@ export default function PeopleManager({
   events,
   attendance,
   onUpdatePersona,
+  onDeletePersona,
   onOpenNewPersonSheet,
   onAddExistingMember
 }: PeopleManagerProps) {
@@ -46,6 +48,8 @@ export default function PeopleManager({
   const [tempNacionalidad, setTempNacionalidad] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Selected persona details
   const selectedPerson = useMemo(() => {
@@ -65,6 +69,7 @@ export default function PeopleManager({
       setTempPhoto(selectedPerson.foto_perfil);
       setTempNacionalidad(selectedPerson.nacionalidad || '');
     }
+    setConfirmDelete(false);
   }, [selectedPersonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasChanges = useMemo(() => {
@@ -81,6 +86,18 @@ export default function PeopleManager({
       tempNacionalidad !== (selectedPerson.nacionalidad || '')
     );
   }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto, tempNacionalidad]);
+
+  const handleDeleteConfirmed = async () => {
+    if (!selectedPersonId) return;
+    setDeleting(true);
+    try {
+      await onDeletePersona(selectedPersonId);
+      setSelectedPersonId(null);
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleSaveChanges = async () => {
     if (!selectedPersonId || !tempNombre.trim()) return;
@@ -565,21 +582,46 @@ export default function PeopleManager({
                   {es ? 'Error al guardar: ' : 'Save error: '}{saveError}
                 </p>
               )}
-              <div className="flex gap-2">
-                <button type="button" onClick={() => { setSelectedPersonId(null); setSaveError(null); }}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer">
-                  {es ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button type="button" onClick={handleSaveChanges} disabled={!hasChanges || !tempNombre.trim() || saving}
-                  className={`flex-[2] py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-                    hasChanges && tempNombre.trim() && !saving
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                  }`}>
-                  <CheckCircle className="w-4 h-4" />
-                  <span>{saving ? (es ? 'Guardando...' : 'Saving...') : (es ? 'Guardar Cambios' : 'Save Changes')}</span>
-                </button>
-              </div>
+              {confirmDelete ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-center">
+                    {es
+                      ? `¿Eliminar a ${tempNombre}? Esta acción no se puede deshacer.`
+                      : `Delete ${tempNombre}? This cannot be undone.`}
+                  </p>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer">
+                      {es ? 'Cancelar' : 'Cancel'}
+                    </button>
+                    <button type="button" onClick={handleDeleteConfirmed} disabled={deleting}
+                      className="flex-[2] py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm">
+                      <Trash2 className="w-4 h-4" />
+                      <span>{deleting ? (es ? 'Eliminando...' : 'Deleting...') : (es ? 'Confirmar Eliminación' : 'Confirm Delete')}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setConfirmDelete(true)}
+                    className="p-2.5 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-2xl transition-all cursor-pointer border border-red-100" title={es ? 'Eliminar persona' : 'Delete person'}>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button type="button" onClick={() => { setSelectedPersonId(null); setSaveError(null); }}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition-all cursor-pointer">
+                    {es ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button type="button" onClick={handleSaveChanges} disabled={!hasChanges || !tempNombre.trim() || saving}
+                    className={`flex-[2] py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                      hasChanges && tempNombre.trim() && !saving
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    }`}>
+                    <CheckCircle className="w-4 h-4" />
+                    <span>{saving ? (es ? 'Guardando...' : 'Saving...') : (es ? 'Guardar Cambios' : 'Save Changes')}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

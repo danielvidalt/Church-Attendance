@@ -152,6 +152,11 @@ export default function App() {
     setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
   };
 
+  const handleDeletePersona = async (id: string) => {
+    await db.deletePersona(id);
+    setPeople((prev) => prev.filter((p) => p.id !== id));
+  };
+
   const handleAddNewSeguimientoLog = async (seg: Seguimiento) => {
     await db.addSeguimiento(seg);
     setSeguimientos((prev) => [seg, ...prev]);
@@ -554,6 +559,7 @@ export default function App() {
               onAddPersonNote={handleAddPersonNote}
               onUpdatePersonPhoto={handleUpdatePersonPhoto}
               onUpdatePersona={handleUpdatePersona}
+              onDeletePersona={handleDeletePersona}
               onOpenNewPersonSheet={() => setActiveSection('attendance')}
               onAddExistingMember={handleAddNewPerson}
             />

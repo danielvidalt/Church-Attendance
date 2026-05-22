@@ -14,6 +14,11 @@ export async function addPersona(p: Persona): Promise<void> {
   if (error) throw error;
 }
 
+export async function deletePersona(id: string): Promise<void> {
+  const { error } = await supabase.from('personas').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function updatePersona(id: string, updates: Partial<Persona>): Promise<void> {
   const { error } = await supabase.from('personas').update(updates).eq('id', id);
   if (error) {
