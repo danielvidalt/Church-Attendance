@@ -257,12 +257,6 @@ export default function App() {
     setActiveSection('attendance');
   };
 
-  const handleResetDatabase = async () => {
-    alert(language === 'es'
-      ? 'El reinicio de base de datos no está disponible en producción. Gestiona los datos desde el panel de Supabase.'
-      : 'Database reset is not available in production. Manage data from the Supabase dashboard.');
-  };
-
   const handleResetAttendanceData = async () => {
     await db.resetAttendanceData();
     setEvents([]);
@@ -618,7 +612,7 @@ export default function App() {
               language={language}
               config={config}
               onSaveConfig={handleSaveConfig}
-              onResetDatabase={handleResetDatabase}
+              onResetDatabase={handleResetAttendanceData}
               onLanguageChange={setLanguage}
               customTracks={customTracks}
               onRegisterCustomTrack={handleRegisterCustomTrack}
