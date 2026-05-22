@@ -591,7 +591,7 @@ export default function ConfigScreen({
 
             <p className="text-xs font-semibold text-slate-505 text-slate-500 leading-relaxed leading-5">
               {language === 'es'
-                ? 'Usa este botón para limpiar el historial de asistencia. Se borrarán todos los eventos y registros de presencia, pero el directorio de personas permanecerá intacto.'
+                ? 'Usa este botón para limpiar el historial de asistencia. Se borrarán todos los eventos y sus registros, pero el directorio de personas permanecerá intacto.'
                 : 'Use this button to clear the attendance history. All events and check-in records will be deleted, but your people directory will remain untouched.'}
             </p>
 
