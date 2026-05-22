@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Language, esTranslations, enTranslations, Configuracion, EventTrack, VolunteerArea } from '../types';
-import { Settings, Check, RefreshCw, AlertTriangle, ShieldCheck, Plus, Trash2, Heart } from 'lucide-react';
+import { Settings, Check, RefreshCw, AlertTriangle, Plus, Trash2, Heart } from 'lucide-react';
 
 interface ConfigScreenProps {
   language: Language;
@@ -603,20 +603,6 @@ export default function ConfigScreen({
               <RefreshCw className="w-3.5 h-3.5" />
               <span>{t.resetMockData}</span>
             </button>
-          </div>
-
-          <div className="bg-slate-950 text-white font-medium p-5 rounded-2xl space-y-3.5 shadow-lg shadow-slate-900/10">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">
-                {language === 'es' ? 'Seguridad Garantizada' : 'Guaranteed Care'}
-              </h4>
-            </div>
-            <p className="text-[11px] font-semibold text-slate-350 leading-relaxed text-slate-400">
-              {language === 'es'
-                ? "Los números telefónicos de visitas y registros nuevos se guardan únicamente dentro del entrono local para protección de la privacidad."
-                : "All sensitive data logs, including visitor phone details, are secured under local sandboxes to fulfill church guidelines."}
-            </p>
           </div>
 
         </div>
