@@ -16,7 +16,8 @@ import ConfigScreen from './components/ConfigScreen';
 import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Home, Menu, X, ArrowLeft, Sun, Moon } from 'lucide-react';
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+  const [showSplash, setShowSplash] = useState(isInstalledApp);
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cl-dark-mode') === 'true');
   const [language, setLanguage] = useState<Language>('es');
   const [user, setUser] = useState<Usuario | null>(null);
