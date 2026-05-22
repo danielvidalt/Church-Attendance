@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus, VolunteerArea, EventTrack } from '../types';
+import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus, VolunteerArea } from '../types';
 import { Search, User, Phone, Cake, Calendar, CheckCircle, UserMinus, Plus, X, Camera, Users, Globe, Trash2, Heart, ChevronDown } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
 import { COUNTRIES, getCountryLabel } from '../data/countries';
@@ -17,7 +17,6 @@ interface PeopleManagerProps {
   onOpenNewPersonSheet: () => void;
   onAddExistingMember: (person: Persona) => void;
   volunteerAreas: VolunteerArea[];
-  tracks: EventTrack[];
 }
 
 export default function PeopleManager({
@@ -30,7 +29,6 @@ export default function PeopleManager({
   onOpenNewPersonSheet,
   onAddExistingMember,
   volunteerAreas,
-  tracks,
 }: PeopleManagerProps) {
   const t = language === 'es' ? esTranslations : enTranslations;
   const es = language === 'es';
@@ -44,9 +42,7 @@ export default function PeopleManager({
   const [filterVoluntario, setFilterVoluntario] = useState<'all' | 'yes' | 'no'>('all');
   const [filterGenero, setFilterGenero] = useState<('M' | 'F')[]>([]);
   const [filterPaises, setFilterPaises] = useState<string[]>([]);
-  const [filterNuevo, setFilterNuevo] = useState(false);
-  const [filterServicio, setFilterServicio] = useState(false);
-  const [filterGrupo, setFilterGrupo] = useState(false);
+  const [filterEstados, setFilterEstados] = useState<MemberStatus[]>([]);
 
   // Editable fields in the profile modal
   const [tempNombre, setTempNombre] = useState('');
@@ -164,19 +160,6 @@ export default function PeopleManager({
     }
   };
 
-  // Precompute sets for attendance-based filters
-  const servicioPersonIds = useMemo(() => {
-    const trackIds = new Set(tracks.filter(t => t.type === 'servicio').map(t => t.id));
-    const eventIds = new Set(events.filter(e => trackIds.has(e.tipo_evento)).map(e => e.id));
-    return new Set(attendance.filter(a => eventIds.has(a.evento_id) && a.presente).map(a => a.persona_id));
-  }, [tracks, events, attendance]);
-
-  const grupoPersonIds = useMemo(() => {
-    const trackIds = new Set(tracks.filter(t => t.type === 'grupo').map(t => t.id));
-    const eventIds = new Set(events.filter(e => trackIds.has(e.tipo_evento)).map(e => e.id));
-    return new Set(attendance.filter(a => eventIds.has(a.evento_id) && a.presente).map(a => a.persona_id));
-  }, [tracks, events, attendance]);
-
   const availableCountries = useMemo(() =>
     [...new Set(people.map(p => p.nacionalidad).filter(Boolean))] as string[]
   , [people]);
@@ -185,9 +168,7 @@ export default function PeopleManager({
     filterVoluntario !== 'all',
     filterGenero.length > 0,
     filterPaises.length > 0,
-    filterNuevo,
-    filterServicio,
-    filterGrupo,
+    filterEstados.length > 0,
   ].filter(Boolean).length;
 
   // Compute filtered people list
@@ -199,12 +180,10 @@ export default function PeopleManager({
       if (filterVoluntario === 'no' && p.es_voluntario) return false;
       if (filterGenero.length > 0 && !filterGenero.includes(p.sexo)) return false;
       if (filterPaises.length > 0 && !filterPaises.includes(p.nacionalidad || '')) return false;
-      if (filterNuevo && p.estado !== 'nuevo') return false;
-      if (filterServicio && !servicioPersonIds.has(p.id)) return false;
-      if (filterGrupo && !grupoPersonIds.has(p.id)) return false;
+      if (filterEstados.length > 0 && !filterEstados.includes(p.estado)) return false;
       return true;
     });
-  }, [people, searchQuery, filterVoluntario, filterGenero, filterPaises, filterNuevo, filterServicio, filterGrupo, servicioPersonIds, grupoPersonIds]);
+  }, [people, searchQuery, filterVoluntario, filterGenero, filterPaises, filterEstados]);
 
   // Compute selected person's attendance logs
   const personHistory = useMemo(() => {
@@ -304,7 +283,7 @@ export default function PeopleManager({
               </div>
               {activeFiltersCount > 0 && (
                 <button
-                  onClick={() => { setFilterVoluntario('all'); setFilterGenero([]); setFilterPaises([]); setFilterNuevo(false); setFilterServicio(false); setFilterGrupo(false); }}
+                  onClick={() => { setFilterVoluntario('all'); setFilterGenero([]); setFilterPaises([]); setFilterEstados([]); }}
                   className="flex items-center gap-1 px-2.5 py-2 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 cursor-pointer transition-colors shrink-0"
                 >
                   <X className="w-3 h-3" />
@@ -390,23 +369,28 @@ export default function PeopleManager({
                 </div>
               )}
 
-              {/* Nuevos */}
-              <button onClick={() => setFilterNuevo(!filterNuevo)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterNuevo ? 'bg-green-50 border-green-300 text-green-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                {filterNuevo ? '✓ ' : ''}{es ? 'Nuevos' : 'New'}
-              </button>
-
-              {/* Servicio */}
-              <button onClick={() => setFilterServicio(!filterServicio)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterServicio ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                {filterServicio ? '✓ ' : ''}{es ? 'Servicio' : 'Service'}
-              </button>
-
-              {/* Grupo */}
-              <button onClick={() => setFilterGrupo(!filterGrupo)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterGrupo ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                {filterGrupo ? '✓ ' : ''}{es ? 'Grupo' : 'Group'}
-              </button>
+              {/* Estado */}
+              <div className="relative">
+                <button onClick={() => setOpenFilter(openFilter === 'estado' ? null : 'estado')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterEstados.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                  {es ? 'Estado' : 'Status'}{filterEstados.length > 0 && ` (${filterEstados.length})`}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {openFilter === 'estado' && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[140px]">
+                    {(['activo', 'nuevo', 'inactivo'] as MemberStatus[]).map(s => (
+                      <label key={s} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" checked={filterEstados.includes(s)}
+                          onChange={() => setFilterEstados(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                          className="text-indigo-600 rounded cursor-pointer" />
+                        <span className="text-[11px] font-bold text-slate-700">
+                          {s === 'activo' ? t.statusActive : s === 'nuevo' ? t.statusNew : t.statusInactive}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
 
             </div>
           </div>
