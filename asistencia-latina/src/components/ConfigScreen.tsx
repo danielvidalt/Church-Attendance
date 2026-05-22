@@ -591,8 +591,8 @@ export default function ConfigScreen({
 
             <p className="text-xs font-semibold text-slate-505 text-slate-500 leading-relaxed leading-5">
               {language === 'es'
-                ? 'Esta aplicación funciona de manera persistente en tu navegador (localStorage). Si deseas deshacer tus pruebas y recuperar la base original seed con datos de 30 personas, puedes reiniciar.'
-                : 'This applet works offline saving updates securely to localStorage. You can restore the seeds dataset containing 30 prefilled individuals anytime.'}
+                ? 'Los datos se guardan en Supabase. Esta acción borra todos los registros de asistencia y eventos, pero no elimina personas del directorio.'
+                : 'Data is stored in Supabase. This action deletes all attendance and event records, but does not remove people from the directory.'}
             </p>
 
             <button
