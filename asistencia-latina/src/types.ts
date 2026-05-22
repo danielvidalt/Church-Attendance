@@ -247,8 +247,8 @@ export const esTranslations = {
   languagePreference: "Idioma de la interfaz",
   saveConfig: "Guardar configuración",
   configSaved: "Configuración actualizada con éxito",
-  resetMockData: "Reiniciar Base de Datos (Muestra)",
-  resetMockConfirm: "¿Estás seguro de que deseas restablecer los datos de demostración? Esto borrará tus cambios manuales."
+  resetMockData: "Borrar Asistencias y Eventos",
+  resetMockConfirm: "Se eliminarán todos los registros de asistencia y eventos. Las personas del directorio no se verán afectadas. Esta acción no se puede deshacer."
 };
 
 export const enTranslations: typeof esTranslations = {
@@ -407,6 +407,6 @@ export const enTranslations: typeof esTranslations = {
   languagePreference: "Dashboard default language",
   saveConfig: "Apply Adjustments",
   configSaved: "Configuration updated successfully",
-  resetMockData: "Rebuild Sample Database (Demo)",
-  resetMockConfirm: "Are you sure you want to restore the default seed dataset? This will discard your offline local modifications."
+  resetMockData: "Clear Attendance & Events",
+  resetMockConfirm: "All attendance records and events will be deleted. People in the directory will not be affected. This cannot be undone."
 };
