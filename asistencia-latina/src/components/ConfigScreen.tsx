@@ -591,8 +591,8 @@ export default function ConfigScreen({
 
             <p className="text-xs font-semibold text-slate-505 text-slate-500 leading-relaxed leading-5">
               {language === 'es'
-                ? 'Los datos se guardan en Supabase. Esta acción borra todos los registros de asistencia y eventos, pero no elimina personas del directorio.'
-                : 'Data is stored in Supabase. This action deletes all attendance and event records, but does not remove people from the directory.'}
+                ? 'Usa este botón para limpiar el historial de asistencia. Se borrarán todos los eventos y registros de presencia, pero el directorio de personas permanecerá intacto.'
+                : 'Use this button to clear the attendance history. All events and check-in records will be deleted, but your people directory will remain untouched.'}
             </p>
 
             <button
