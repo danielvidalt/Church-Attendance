@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, Seguimiento, Configuracion, Usuario, EventType, MemberStatus, EventTrack } from './types';
+import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, Seguimiento, Configuracion, Usuario, EventType, MemberStatus, EventTrack, VolunteerArea } from './types';
 import { DEFAULT_CONFIG } from './data/mockPeople';
 import { calculateAlerts } from './utils/attendance';
 import { supabase } from './lib/supabase';
@@ -39,6 +39,7 @@ export default function App() {
   const [seguimientos, setSeguimientos] = useState<Seguimiento[]>([]);
   const [config, setConfig] = useState<Configuracion>(DEFAULT_CONFIG);
   const [customTracks, setCustomTracks] = useState<EventTrack[]>([]);
+  const [volunteerAreas, setVolunteerAreas] = useState<VolunteerArea[]>([]);
 
   const [activeAttendanceCategory, setActiveAttendanceCategory] = useState<EventType>('servicio_11');
   const [showOnlySelectedTrack, setShowOnlySelectedTrack] = useState(false);
@@ -47,7 +48,7 @@ export default function App() {
   // Load all data from Supabase
   const loadAllData = useCallback(async () => {
     try {
-      const [fetchedPeople, fetchedEvents, fetchedAttendance, fetchedSeguimientos, fetchedConfig, fetchedTracks] =
+      const [fetchedPeople, fetchedEvents, fetchedAttendance, fetchedSeguimientos, fetchedConfig, fetchedTracks, fetchedVolunteerAreas] =
         await Promise.all([
           db.getPersonas(),
           db.getEventos(),
@@ -55,6 +56,7 @@ export default function App() {
           db.getSeguimientos(),
           db.getConfiguracion(),
           db.getEventTracks(),
+          db.getVolunteerAreas(),
         ]);
       setPeople(fetchedPeople);
       setEvents(fetchedEvents);
@@ -62,6 +64,7 @@ export default function App() {
       setSeguimientos(fetchedSeguimientos);
       setConfig(fetchedConfig ?? DEFAULT_CONFIG);
       setCustomTracks(fetchedTracks);
+      setVolunteerAreas(fetchedVolunteerAreas);
     } catch (err) {
       console.error('Error loading data:', err);
     }
@@ -181,6 +184,16 @@ export default function App() {
   const handleDeleteCustomTrack = async (id: string) => {
     await db.deleteEventTrack(id);
     setCustomTracks((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleAddVolunteerArea = async (area: VolunteerArea) => {
+    await db.addVolunteerArea(area);
+    setVolunteerAreas((prev) => [...prev, area]);
+  };
+
+  const handleDeleteVolunteerArea = async (id: string) => {
+    await db.deleteVolunteerArea(id);
+    setVolunteerAreas((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleSaveAttendanceBatch = async (
@@ -562,6 +575,7 @@ export default function App() {
               onDeletePersona={handleDeletePersona}
               onOpenNewPersonSheet={() => setActiveSection('attendance')}
               onAddExistingMember={handleAddNewPerson}
+              volunteerAreas={volunteerAreas}
             />
           )}
 
@@ -609,6 +623,9 @@ export default function App() {
               customTracks={customTracks}
               onRegisterCustomTrack={handleRegisterCustomTrack}
               onDeleteCustomTrack={handleDeleteCustomTrack}
+              volunteerAreas={volunteerAreas}
+              onAddVolunteerArea={handleAddVolunteerArea}
+              onDeleteVolunteerArea={handleDeleteVolunteerArea}
             />
           )}
 

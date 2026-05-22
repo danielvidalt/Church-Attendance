@@ -16,6 +16,16 @@ export interface Persona {
   notas?: string;
   foto_perfil?: string; // profile photo as base64 data URL
   nacionalidad?: string; // ISO 3166-1 alpha-2 country code e.g. "CO"
+  es_voluntario?: boolean;
+  areas_voluntario?: { areaId: string; nota?: string }[];
+}
+
+export interface VolunteerArea {
+  id: string;
+  nombre_es: string;
+  nombre_en: string;
+  permite_nota: boolean;
+  orden: number;
 }
 
 export interface Evento {
@@ -215,6 +225,15 @@ export const esTranslations = {
   historicalLogOfSavedEvents: "Registro de Eventos Guardados",
   chartNoData: "Registra más datos de asistencia para ver tendencias completas.",
 
+  // Volunteer
+  volunteerLabel: "Voluntario/a",
+  volunteerAreasLabel: "Áreas de servicio",
+  volunteerAreasConfig: "Áreas de Voluntariado",
+  volunteerAreasConfigDesc: "Gestiona las áreas disponibles para asignar voluntarios.",
+  addVolunteerArea: "Agregar área",
+  volunteerOtraNota: "Descripción del área...",
+  isVolunteer: "¿Es voluntario/a?",
+
   // Config UI
   configTitle: "Ajustes del Sistema",
   alertRules: "Reglas de Alerta por Ausencia",
@@ -365,6 +384,15 @@ export const enTranslations: typeof esTranslations = {
   trendTitle: "Growth Vectors",
   historicalLogOfSavedEvents: "Historical List of Saved Check-ins",
   chartNoData: "No data logs yet. Log a few services to unlock trends charts.",
+
+  // Volunteer
+  volunteerLabel: "Volunteer",
+  volunteerAreasLabel: "Service areas",
+  volunteerAreasConfig: "Volunteer Areas",
+  volunteerAreasConfigDesc: "Manage available areas for assigning volunteers.",
+  addVolunteerArea: "Add area",
+  volunteerOtraNota: "Area description...",
+  isVolunteer: "Is a volunteer?",
 
   // Config UI
   configTitle: "System Preferences",

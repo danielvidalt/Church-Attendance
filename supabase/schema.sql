@@ -80,6 +80,33 @@ CREATE TABLE IF NOT EXISTS event_tracks (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ── Áreas de Voluntariado ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS volunteer_areas (
+  id            TEXT PRIMARY KEY,
+  nombre_es     TEXT NOT NULL,
+  nombre_en     TEXT NOT NULL,
+  permite_nota  BOOLEAN NOT NULL DEFAULT false,
+  orden         INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO volunteer_areas (id, nombre_es, nombre_en, permite_nota, orden) VALUES
+  ('area_eventos',        'Eventos',            'Events',           false, 1),
+  ('area_interpretacion', 'Interpretación',     'Interpretation',   false, 2),
+  ('area_kids',           'Kids',               'Kids',             false, 3),
+  ('area_camaras',        'Cámaras',            'Cameras',          false, 4),
+  ('area_fotografia',     'Fotografía',         'Photography',      false, 5),
+  ('area_welcome',        'Welcome',            'Welcome',          false, 6),
+  ('area_comma',          'Comma (café)',        'Comma (café)',     false, 7),
+  ('area_worship',        'Worship',            'Worship',          false, 8),
+  ('area_latina',         'Comunidad Latina',   'Latina Community', false, 9),
+  ('area_otro',           'Otro',               'Other',            true,  10)
+ON CONFLICT (id) DO NOTHING;
+
+-- Campos de voluntariado en personas
+ALTER TABLE personas ADD COLUMN IF NOT EXISTS es_voluntario BOOLEAN DEFAULT false;
+ALTER TABLE personas ADD COLUMN IF NOT EXISTS areas_voluntario JSONB DEFAULT '[]';
+
 -- ── Perfiles de usuario (vinculado a Supabase Auth) ───────────
 CREATE TABLE IF NOT EXISTS profiles (
   id                  UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -94,8 +121,9 @@ ALTER TABLE eventos         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asistencias     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seguimientos    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE event_tracks    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_tracks      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE volunteer_areas   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles          ENABLE ROW LEVEL SECURITY;
 
 -- Usuarios autenticados pueden leer y escribir todo
 CREATE POLICY "auth_all" ON personas        FOR ALL TO authenticated USING (true) WITH CHECK (true);
@@ -103,14 +131,15 @@ CREATE POLICY "auth_all" ON eventos         FOR ALL TO authenticated USING (true
 CREATE POLICY "auth_all" ON asistencias     FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON seguimientos    FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON configuracion   FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all" ON event_tracks    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON event_tracks      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON volunteer_areas   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Cada usuario solo ve y edita su propio perfil
 CREATE POLICY "own_profile" ON profiles FOR ALL TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 -- ── Trigger: crear perfil automáticamente al registrarse ──────
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   INSERT INTO profiles (id, nombre, rol, idioma_preferido)
   VALUES (

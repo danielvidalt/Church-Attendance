@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus } from '../types';
-import { Search, User, Phone, Cake, Calendar, FileText, CheckCircle, AlertOctagon, UserMinus, Plus, X, Camera, Users, Globe, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus, VolunteerArea } from '../types';
+import { Search, User, Phone, Cake, Calendar, CheckCircle, UserMinus, Plus, X, Camera, Users, Globe, Trash2, Heart } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
 import { COUNTRIES, getCountryLabel } from '../data/countries';
 
@@ -16,6 +16,7 @@ interface PeopleManagerProps {
   onDeletePersona: (id: string) => Promise<void>;
   onOpenNewPersonSheet: () => void;
   onAddExistingMember: (person: Persona) => void;
+  volunteerAreas: VolunteerArea[];
 }
 
 export default function PeopleManager({
@@ -26,7 +27,8 @@ export default function PeopleManager({
   onUpdatePersona,
   onDeletePersona,
   onOpenNewPersonSheet,
-  onAddExistingMember
+  onAddExistingMember,
+  volunteerAreas,
 }: PeopleManagerProps) {
   const t = language === 'es' ? esTranslations : enTranslations;
   const es = language === 'es';
@@ -50,6 +52,8 @@ export default function PeopleManager({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [tempEsVoluntario, setTempEsVoluntario] = useState(false);
+  const [tempAreasVoluntario, setTempAreasVoluntario] = useState<{ areaId: string; nota?: string }[]>([]);
 
   // Selected persona details
   const selectedPerson = useMemo(() => {
@@ -69,8 +73,25 @@ export default function PeopleManager({
       setTempPhoto(selectedPerson.foto_perfil);
       setTempNacionalidad(selectedPerson.nacionalidad || '');
     }
+    setTempEsVoluntario(selectedPerson?.es_voluntario ?? false);
+    setTempAreasVoluntario(selectedPerson?.areas_voluntario ?? []);
     setConfirmDelete(false);
   }, [selectedPersonId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isAreaSelected = (areaId: string) => tempAreasVoluntario.some((a) => a.areaId === areaId);
+  const getAreaNota = (areaId: string) => tempAreasVoluntario.find((a) => a.areaId === areaId)?.nota ?? '';
+  const toggleArea = (areaId: string) => {
+    setTempAreasVoluntario((prev) =>
+      prev.some((a) => a.areaId === areaId)
+        ? prev.filter((a) => a.areaId !== areaId)
+        : [...prev, { areaId }]
+    );
+  };
+  const setAreaNota = (areaId: string, nota: string) => {
+    setTempAreasVoluntario((prev) =>
+      prev.map((a) => (a.areaId === areaId ? { ...a, nota } : a))
+    );
+  };
 
   const hasChanges = useMemo(() => {
     if (!selectedPerson) return false;
@@ -83,9 +104,11 @@ export default function PeopleManager({
       tempStatus !== selectedPerson.estado ||
       tempNotes !== (selectedPerson.notas || '') ||
       tempPhoto !== selectedPerson.foto_perfil ||
-      tempNacionalidad !== (selectedPerson.nacionalidad || '')
+      tempNacionalidad !== (selectedPerson.nacionalidad || '') ||
+      tempEsVoluntario !== (selectedPerson.es_voluntario ?? false) ||
+      JSON.stringify(tempAreasVoluntario) !== JSON.stringify(selectedPerson.areas_voluntario ?? [])
     );
-  }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto, tempNacionalidad]);
+  }, [selectedPerson, tempNombre, tempTelefono, tempFechaNacimiento, tempFechaPrimeraVisita, tempSexo, tempStatus, tempNotes, tempPhoto, tempNacionalidad, tempEsVoluntario, tempAreasVoluntario]);
 
   const handleDeleteConfirmed = async () => {
     if (!selectedPersonId) return;
@@ -114,6 +137,8 @@ export default function PeopleManager({
         notas: tempNotes.trim() || undefined,
         foto_perfil: tempPhoto,
         nacionalidad: tempNacionalidad || undefined,
+        es_voluntario: tempEsVoluntario,
+        areas_voluntario: tempEsVoluntario ? tempAreasVoluntario : [],
       });
       setSelectedPersonId(null);
     } catch (err: unknown) {
@@ -545,6 +570,55 @@ export default function PeopleManager({
                   rows={3}
                   className="w-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-800 font-semibold placeholder-slate-400 resize-none leading-relaxed"
                 />
+              </div>
+
+              {/* Voluntariado */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Heart className="w-3 h-3" />
+                    {es ? 'Voluntario/a' : 'Volunteer'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setTempEsVoluntario(!tempEsVoluntario); if (tempEsVoluntario) setTempAreasVoluntario([]); }}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${tempEsVoluntario ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${tempEsVoluntario ? 'translate-x-4' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                {tempEsVoluntario && volunteerAreas.length > 0 && (
+                  <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    {volunteerAreas.map((area) => {
+                      const selected = isAreaSelected(area.id);
+                      return (
+                        <div key={area.id} className="space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleArea(area.id)}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer ${
+                              selected
+                                ? 'bg-indigo-50 border-indigo-300 text-indigo-800'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {selected ? '✓ ' : ''}{es ? area.nombre_es : area.nombre_en}
+                          </button>
+                          {selected && area.permite_nota && (
+                            <input
+                              type="text"
+                              value={getAreaNota(area.id)}
+                              onChange={(e) => setAreaNota(area.id, e.target.value)}
+                              placeholder={es ? 'Descripción...' : 'Description...'}
+                              className="w-full col-span-2 text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Historial de asistencia */}

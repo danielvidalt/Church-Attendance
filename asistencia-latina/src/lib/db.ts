@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Persona, Evento, Asistencia, Seguimiento, Configuracion, EventTrack } from '../types';
+import type { Persona, Evento, Asistencia, Seguimiento, Configuracion, EventTrack, VolunteerArea } from '../types';
 
 // ── Personas ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ export async function updatePersona(id: string, updates: Partial<Persona>): Prom
     // If the error is about a missing column (e.g. nacionalidad not yet added),
     // retry without that field so other changes are not lost.
     if (error.message?.includes('column') || error.code === '42703') {
-      const { nacionalidad: _dropped, ...rest } = updates as Partial<Persona> & { nacionalidad?: string };
+      const { nacionalidad: _n, es_voluntario: _ev, areas_voluntario: _av, ...rest } = updates as Partial<Persona> & { nacionalidad?: string };
       const { error: retryError } = await supabase.from('personas').update(rest).eq('id', id);
       if (retryError) throw retryError;
       return;
@@ -146,5 +146,35 @@ export async function addEventTrack(t: EventTrack): Promise<void> {
 
 export async function deleteEventTrack(id: string): Promise<void> {
   const { error } = await supabase.from('event_tracks').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Volunteer Areas ───────────────────────────────────────────────────────────
+
+export async function getVolunteerAreas(): Promise<VolunteerArea[]> {
+  const { data, error } = await supabase.from('volunteer_areas').select('*').order('orden');
+  if (error) throw error;
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id,
+    nombre_es: row.nombre_es,
+    nombre_en: row.nombre_en,
+    permite_nota: row.permite_nota,
+    orden: row.orden,
+  })) as VolunteerArea[];
+}
+
+export async function addVolunteerArea(a: VolunteerArea): Promise<void> {
+  const { error } = await supabase.from('volunteer_areas').insert({
+    id: a.id,
+    nombre_es: a.nombre_es,
+    nombre_en: a.nombre_en,
+    permite_nota: a.permite_nota,
+    orden: a.orden,
+  });
+  if (error) throw error;
+}
+
+export async function deleteVolunteerArea(id: string): Promise<void> {
+  const { error } = await supabase.from('volunteer_areas').delete().eq('id', id);
   if (error) throw error;
 }
