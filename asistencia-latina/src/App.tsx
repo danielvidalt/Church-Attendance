@@ -570,6 +570,7 @@ export default function App() {
               onOpenNewPersonSheet={() => setActiveSection('attendance')}
               onAddExistingMember={handleAddNewPerson}
               volunteerAreas={volunteerAreas}
+              tracks={allTracks}
             />
           )}
 

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus, VolunteerArea } from '../types';
-import { Search, User, Phone, Cake, Calendar, CheckCircle, UserMinus, Plus, X, Camera, Users, Globe, Trash2, Heart } from 'lucide-react';
+import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus, VolunteerArea, EventTrack } from '../types';
+import { Search, User, Phone, Cake, Calendar, CheckCircle, UserMinus, Plus, X, Camera, Users, Globe, Trash2, Heart, ChevronDown } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
 import { COUNTRIES, getCountryLabel } from '../data/countries';
 
@@ -17,6 +17,7 @@ interface PeopleManagerProps {
   onOpenNewPersonSheet: () => void;
   onAddExistingMember: (person: Persona) => void;
   volunteerAreas: VolunteerArea[];
+  tracks: EventTrack[];
 }
 
 export default function PeopleManager({
@@ -29,14 +30,23 @@ export default function PeopleManager({
   onOpenNewPersonSheet,
   onAddExistingMember,
   volunteerAreas,
+  tracks,
 }: PeopleManagerProps) {
   const t = language === 'es' ? esTranslations : enTranslations;
   const es = language === 'es';
 
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | MemberStatus>('all');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  // Filters
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [filterVoluntario, setFilterVoluntario] = useState<'all' | 'yes' | 'no'>('all');
+  const [filterGenero, setFilterGenero] = useState<('M' | 'F')[]>([]);
+  const [filterPaises, setFilterPaises] = useState<string[]>([]);
+  const [filterNuevo, setFilterNuevo] = useState(false);
+  const [filterServicio, setFilterServicio] = useState(false);
+  const [filterGrupo, setFilterGrupo] = useState(false);
 
   // Editable fields in the profile modal
   const [tempNombre, setTempNombre] = useState('');
@@ -154,23 +164,47 @@ export default function PeopleManager({
     }
   };
 
+  // Precompute sets for attendance-based filters
+  const servicioPersonIds = useMemo(() => {
+    const trackIds = new Set(tracks.filter(t => t.type === 'servicio').map(t => t.id));
+    const eventIds = new Set(events.filter(e => trackIds.has(e.tipo_evento)).map(e => e.id));
+    return new Set(attendance.filter(a => eventIds.has(a.evento_id) && a.presente).map(a => a.persona_id));
+  }, [tracks, events, attendance]);
+
+  const grupoPersonIds = useMemo(() => {
+    const trackIds = new Set(tracks.filter(t => t.type === 'grupo').map(t => t.id));
+    const eventIds = new Set(events.filter(e => trackIds.has(e.tipo_evento)).map(e => e.id));
+    return new Set(attendance.filter(a => eventIds.has(a.evento_id) && a.presente).map(a => a.persona_id));
+  }, [tracks, events, attendance]);
+
+  const availableCountries = useMemo(() =>
+    [...new Set(people.map(p => p.nacionalidad).filter(Boolean))] as string[]
+  , [people]);
+
+  const activeFiltersCount = [
+    filterVoluntario !== 'all',
+    filterGenero.length > 0,
+    filterPaises.length > 0,
+    filterNuevo,
+    filterServicio,
+    filterGrupo,
+  ].filter(Boolean).length;
+
   // Compute filtered people list
   const filteredPeople = useMemo(() => {
     return people.filter((p) => {
-      // 1. Search filter
       const q = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        p.nombre_completo.toLowerCase().includes(q) ||
-        (p.telefono && p.telefono.includes(q));
-
-      if (!matchesSearch) return false;
-
-      // 2. Status filter
-      if (statusFilter !== 'all' && p.estado !== statusFilter) return false;
-
+      if (q && !p.nombre_completo.toLowerCase().includes(q) && !(p.telefono && p.telefono.includes(q))) return false;
+      if (filterVoluntario === 'yes' && !p.es_voluntario) return false;
+      if (filterVoluntario === 'no' && p.es_voluntario) return false;
+      if (filterGenero.length > 0 && !filterGenero.includes(p.sexo)) return false;
+      if (filterPaises.length > 0 && !filterPaises.includes(p.nacionalidad || '')) return false;
+      if (filterNuevo && p.estado !== 'nuevo') return false;
+      if (filterServicio && !servicioPersonIds.has(p.id)) return false;
+      if (filterGrupo && !grupoPersonIds.has(p.id)) return false;
       return true;
     });
-  }, [people, searchQuery, statusFilter]);
+  }, [people, searchQuery, filterVoluntario, filterGenero, filterPaises, filterNuevo, filterServicio, filterGrupo, servicioPersonIds, grupoPersonIds]);
 
   // Compute selected person's attendance logs
   const personHistory = useMemo(() => {
@@ -252,36 +286,128 @@ export default function PeopleManager({
         <div className="space-y-4">
           
           {/* List Search & Filters Header */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            {/* Search Input */}
-            <div className="relative w-full sm:max-w-xs">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                <Search className="w-4 h-4" />
-              </span>
-              <input
-                type="text"
-                placeholder={t.searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-slate-800 placeholder-slate-400"
-              />
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+
+            {/* Search + clear filters row */}
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Search className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-slate-800 placeholder-slate-400"
+                />
+              </div>
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={() => { setFilterVoluntario('all'); setFilterGenero([]); setFilterPaises([]); setFilterNuevo(false); setFilterServicio(false); setFilterGrupo(false); }}
+                  className="flex items-center gap-1 px-2.5 py-2 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 cursor-pointer transition-colors shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                  {activeFiltersCount}
+                </button>
+              )}
             </div>
 
-            {/* Status Select filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-bold text-slate-400 shrink-0 uppercase tracking-widest leading-none">
-                {t.statusLabel}:
-              </span>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | MemberStatus)}
-                className="w-full sm:w-auto text-xs font-bold text-slate-700 bg-slate-50 ring-1 ring-slate-200 py-1.5 px-3.5 rounded-xl border-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20"
-              >
-                <option value="all">{t.statusAll}</option>
-                <option value="activo">{t.statusActive}</option>
-                <option value="nuevo">{t.statusNew}</option>
-                <option value="inactivo">{t.statusInactive}</option>
-              </select>
+            {/* Filter chips */}
+            {openFilter && <div className="fixed inset-0 z-10" onClick={() => setOpenFilter(null)} />}
+            <div className="flex flex-wrap gap-1.5">
+
+              {/* Voluntarios */}
+              <div className="relative">
+                <button onClick={() => setOpenFilter(openFilter === 'voluntario' ? null : 'voluntario')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterVoluntario !== 'all' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                  <Heart className="w-3 h-3" />
+                  {es ? 'Voluntarios' : 'Volunteers'}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {openFilter === 'voluntario' && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[160px]">
+                    {(['all', 'yes', 'no'] as const).map(v => (
+                      <button key={v} onClick={() => { setFilterVoluntario(v); setOpenFilter(null); }}
+                        className={`w-full text-left px-3 py-1.5 text-[11px] font-bold hover:bg-slate-50 transition-colors ${filterVoluntario === v ? 'text-indigo-700' : 'text-slate-700'}`}>
+                        {filterVoluntario === v ? '✓ ' : ''}{v === 'all' ? (es ? 'Todos' : 'All') : v === 'yes' ? (es ? 'Solo voluntarios' : 'Volunteers only') : (es ? 'No voluntarios' : 'Non-volunteers')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Género */}
+              <div className="relative">
+                <button onClick={() => setOpenFilter(openFilter === 'genero' ? null : 'genero')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterGenero.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                  {es ? 'Género' : 'Gender'}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {openFilter === 'genero' && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[140px]">
+                    {(['F', 'M'] as const).map(g => (
+                      <label key={g} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" checked={filterGenero.includes(g)}
+                          onChange={() => setFilterGenero(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+                          className="text-indigo-600 rounded cursor-pointer" />
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
+                          <span className={`w-2 h-2 rounded-full ${g === 'F' ? 'bg-pink-400' : 'bg-blue-400'}`} />
+                          {g === 'F' ? (es ? 'Femenino' : 'Female') : (es ? 'Masculino' : 'Male')}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* País */}
+              {availableCountries.length > 0 && (
+                <div className="relative">
+                  <button onClick={() => setOpenFilter(openFilter === 'pais' ? null : 'pais')}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterPaises.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                    <Globe className="w-3 h-3" />
+                    {es ? 'País' : 'Country'}{filterPaises.length > 0 && ` (${filterPaises.length})`}
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  {openFilter === 'pais' && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[170px] max-h-48 overflow-y-auto">
+                      {availableCountries.map(code => {
+                        const country = COUNTRIES.find(c => c.code === code);
+                        return (
+                          <label key={code} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                            <input type="checkbox" checked={filterPaises.includes(code)}
+                              onChange={() => setFilterPaises(prev => prev.includes(code) ? prev.filter(x => x !== code) : [...prev, code])}
+                              className="text-indigo-600 rounded cursor-pointer" />
+                            <span className="text-[11px] font-bold text-slate-700">
+                              {country?.flag} {es ? country?.nameEs : country?.nameEn}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Nuevos */}
+              <button onClick={() => setFilterNuevo(!filterNuevo)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterNuevo ? 'bg-green-50 border-green-300 text-green-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                {filterNuevo ? '✓ ' : ''}{es ? 'Nuevos' : 'New'}
+              </button>
+
+              {/* Servicio */}
+              <button onClick={() => setFilterServicio(!filterServicio)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterServicio ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                {filterServicio ? '✓ ' : ''}{es ? 'Servicio' : 'Service'}
+              </button>
+
+              {/* Grupo */}
+              <button onClick={() => setFilterGrupo(!filterGrupo)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterGrupo ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                {filterGrupo ? '✓ ' : ''}{es ? 'Grupo' : 'Group'}
+              </button>
+
             </div>
           </div>
 
