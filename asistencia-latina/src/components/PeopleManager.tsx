@@ -333,11 +333,7 @@ export default function PeopleManager({
                             <span className="text-xs font-extrabold text-slate-900">
                               {person.nombre_completo}
                             </span>
-                            {person.sexo === 'F' ? (
-                              <span className="text-[11px]">👩</span>
-                            ) : (
-                              <span className="text-[11px]">👨</span>
-                            )}
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${person.sexo === 'F' ? 'bg-pink-400' : 'bg-blue-400'}`} />
                             {person.nacionalidad && (
                               <span className="text-[13px]" title={getCountryLabel(person.nacionalidad, language)}>
                                 {COUNTRIES.find(c => c.code === person.nacionalidad)?.flag}
@@ -486,7 +482,8 @@ export default function PeopleManager({
                       className={`py-1.5 text-xs font-bold rounded-xl border cursor-pointer transition-all ${
                         tempSexo === g ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}>
-                      {g === 'F' ? (es ? 'Femenino 👩' : 'Female 👩') : (es ? 'Masculino 👨' : 'Male 👨')}
+                      <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${g === 'F' ? 'bg-pink-400' : 'bg-blue-400'}`} />
+                      {g === 'F' ? (es ? 'Femenino' : 'Female') : (es ? 'Masculino' : 'Male')}
                     </button>
                   ))}
                 </div>
