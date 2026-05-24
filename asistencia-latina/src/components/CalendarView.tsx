@@ -20,8 +20,8 @@ const TYPE_COLORS: Record<string, { dot: string; bg: string; border: string; tex
 const fallbackColor = { dot: 'bg-slate-400', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' };
 const typeColor = (tipo: string) => TYPE_COLORS[tipo] ?? fallbackColor;
 
-const DAY_LABELS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const DAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABELS_ES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DAY_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_LABELS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MONTH_LABELS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -72,7 +72,8 @@ export default function CalendarView({ language, people, events, attendance, cus
     return map;
   }, [events]);
 
-  const firstDayOffset = new Date(viewYear, viewMonth, 1).getDay();
+  // getDay() returns 0=Sun…6=Sat; shift so Mon=0, …, Sun=6
+  const firstDayOffset = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
   const daysInMonth    = new Date(viewYear, viewMonth + 1, 0).getDate();
 
   const cells: (number | null)[] = [
