@@ -434,7 +434,6 @@ export default function StatsDashboard({
                 <div className="space-y-2.5">
                   <StatRow label={es ? 'Presentes' : 'Present'} valA={statsA.total}    valB={statsB.total}    />
                   <StatRow label={es ? 'Nuevos'    : 'New'}     valA={statsA.nuevos}   valB={statsB.nuevos}   />
-                  <StatRow label={es ? 'Ausentes'  : 'Absent'}  valA={statsA.ausentes} valB={statsB.ausentes} />
                 </div>
                 <p className="text-[10px] text-slate-400 font-semibold text-center pt-1">
                   {es ? 'Verde = mayor en esa categoría' : 'Green = higher in that category'}

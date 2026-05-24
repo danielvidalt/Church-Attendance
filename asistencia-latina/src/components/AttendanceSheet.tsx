@@ -291,9 +291,6 @@ export default function AttendanceSheet({
             <div className="border-l border-green-200/60 pl-3">
               {t.newPresents}: <span className="text-teal-700 font-extrabold">{summaryStats.new + summaryStats.anon}</span>
             </div>
-            <div className="border-l border-green-200/60 pl-3">
-              {t.absents}: <span className="text-red-700 font-extrabold">{summaryStats.absent}</span>
-            </div>
           </div>
         </div>
       )}
@@ -381,11 +378,6 @@ export default function AttendanceSheet({
                 <span className="text-xs font-semibold text-slate-300">{t.newPresents}:</span>
                 <span className="text-sm font-black text-green-400">{liveStats.new + anonCount}</span>
               </div>
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-xs font-semibold text-slate-300">{t.absents}:</span>
-                <span className="text-sm font-black text-red-400">{liveStats.absent}</span>
-              </div>
-
               {/* Anonymous new visitor counter */}
               <div className="pt-3 border-t border-white/10 space-y-2">
                 <span className="block text-[10px] font-black uppercase tracking-widest text-amber-400">
