@@ -39,8 +39,10 @@ export default function AttendanceSheet({
   const t = language === 'es' ? esTranslations : enTranslations;
 
   const [selectedEventType, setSelectedEventType] = useState<EventType>(initialEventType);
-  // Default to May 21, 2026 (the current system time relative date, so calculations match May 2026 data base)
-  const [selectedDate, setSelectedDate] = useState('2026-05-21');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('all');
   
