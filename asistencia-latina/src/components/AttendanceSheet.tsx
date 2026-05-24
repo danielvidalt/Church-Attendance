@@ -525,11 +525,7 @@ export default function AttendanceSheet({
                                 {t.statusNew}
                               </span>
                             )}
-                            {person.sexo === 'F' ? (
-                              <span className="text-[11px]">👩</span>
-                            ) : (
-                              <span className="text-[11px]">👨</span>
-                            )}
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${person.sexo === 'F' ? 'bg-pink-400' : 'bg-blue-400'}`} />
                           </div>
                           <div className="text-[11px] font-semibold text-slate-400 mt-0.5">
                             {person.telefono || (language === 'es' ? 'Sin teléfono registrado' : 'No phone recorded')}
