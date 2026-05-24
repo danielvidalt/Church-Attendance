@@ -4,6 +4,78 @@ import { calculateAlerts } from '../utils/attendance';
 import { TrendingUp, HeartHandshake, UserPlus, AlertTriangle, CalendarRange, Trash2, ArrowLeftRight } from 'lucide-react';
 import { DEFAULT_CONFIG } from '../data/mockPeople';
 
+// ── Comparison sub-components (defined outside StatsDashboard for stable refs) ──
+
+function StatRow({ label, valA, valB }: { label: string; valA: number; valB: number }) {
+  const max  = Math.max(valA, valB, 1);
+  const pctA = (valA / max) * 100;
+  const pctB = (valB / max) * 100;
+  const aWins = valA > valB;
+  const bWins = valB > valA;
+  return (
+    <div className="grid grid-cols-[1fr_2fr_1fr] items-center gap-2">
+      <div className={`text-right text-sm font-extrabold ${aWins ? 'text-green-700' : 'text-slate-700'}`}>{valA}</div>
+      <div className="space-y-1">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center leading-none">{label}</div>
+        <div className="flex gap-1 h-3">
+          <div className="flex-1 flex justify-end bg-slate-100 rounded-l-full overflow-hidden">
+            <div className={`h-full rounded-l-full transition-all ${aWins ? 'bg-green-500' : 'bg-indigo-400'}`} style={{ width: `${pctA}%` }} />
+          </div>
+          <div className="flex-1 bg-slate-100 rounded-r-full overflow-hidden">
+            <div className={`h-full rounded-r-full transition-all ${bWins ? 'bg-green-500' : 'bg-violet-400'}`} style={{ width: `${pctB}%` }} />
+          </div>
+        </div>
+      </div>
+      <div className={`text-left text-sm font-extrabold ${bWins ? 'text-green-700' : 'text-slate-700'}`}>{valB}</div>
+    </div>
+  );
+}
+
+function CompareSelector({
+  side, value, onChange, dates, es,
+}: {
+  side: 'A' | 'B';
+  value: { tipo: EventType; fecha: string };
+  onChange: (v: { tipo: EventType; fecha: string }) => void;
+  dates: string[];
+  es: boolean;
+}) {
+  const isA = side === 'A';
+  const fmtDate = (iso: string) => {
+    const [, m, d] = iso.split('-');
+    const mNames = es
+      ? ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+      : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(d)} ${mNames[parseInt(m) - 1]}`;
+  };
+  return (
+    <div className={`space-y-2 p-3 rounded-xl border ${isA ? 'bg-indigo-50 border-indigo-200' : 'bg-violet-50 border-violet-200'}`}>
+      <span className={`text-[10px] font-black uppercase tracking-widest ${isA ? 'text-indigo-700' : 'text-violet-700'}`}>
+        {es ? `Lado ${side}` : `Side ${side}`}
+      </span>
+      <select
+        value={value.tipo}
+        onChange={e => onChange({ tipo: e.target.value as EventType, fecha: '' })}
+        className="w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
+      >
+        {ALL_TRACKS.map(t => (
+          <option key={t.id} value={t.id}>{es ? t.nameEs : t.nameEn}</option>
+        ))}
+      </select>
+      <select
+        value={value.fecha}
+        onChange={e => onChange({ ...value, fecha: e.target.value })}
+        className="w-full text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
+      >
+        <option value="">{es ? 'Último registro' : 'Latest record'}</option>
+        {dates.map(d => (
+          <option key={d} value={d}>{fmtDate(d)} ({d})</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 interface StatsDashboardProps {
   language: Language;
   people: Persona[];
@@ -118,24 +190,35 @@ export default function StatsDashboard({
     return { points, pathD, areaD, width, height, maxCount, pL, pB };
   }, [chronicleEvents]);
 
-  const datesForType = (tipo: EventType) =>
-    [...new Set(events.filter(e => e.tipo_evento === tipo).map(e => e.fecha))]
-      .sort((a, b) => b.localeCompare(a));
+  const datesA = useMemo(() =>
+    [...new Set(events.filter(e => e.tipo_evento === compareA.tipo).map(e => e.fecha))]
+      .sort((a, b) => b.localeCompare(a)),
+  [events, compareA.tipo]);
 
-  const getCompareStats = (tipo: EventType, fecha: string) => {
-    const sorted = events.filter(e => e.tipo_evento === tipo).sort((a, b) => b.fecha.localeCompare(a.fecha));
-    const evt = fecha === '' ? sorted[0] : sorted.find(e => e.fecha === fecha);
+  const datesB = useMemo(() =>
+    [...new Set(events.filter(e => e.tipo_evento === compareB.tipo).map(e => e.fecha))]
+      .sort((a, b) => b.localeCompare(a)),
+  [events, compareB.tipo]);
+
+  const statsA = useMemo(() => {
+    const sorted = events.filter(e => e.tipo_evento === compareA.tipo).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const evt = compareA.fecha === '' ? sorted[0] : sorted.find(e => e.fecha === compareA.fecha);
     if (!evt) return null;
     const records = attendance.filter(a => a.evento_id === evt.id);
     const present = records.filter(r => r.presente).length;
     const anon    = evt.asistentes_anonimos ?? 0;
-    return {
-      fecha:    evt.fecha,
-      total:    present + anon,
-      nuevos:   records.filter(r => r.es_nuevo && r.presente).length + anon,
-      ausentes: records.filter(r => !r.presente).length,
-    };
-  };
+    return { fecha: evt.fecha, total: present + anon, nuevos: records.filter(r => r.es_nuevo && r.presente).length + anon };
+  }, [events, attendance, compareA]);
+
+  const statsB = useMemo(() => {
+    const sorted = events.filter(e => e.tipo_evento === compareB.tipo).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const evt = compareB.fecha === '' ? sorted[0] : sorted.find(e => e.fecha === compareB.fecha);
+    if (!evt) return null;
+    const records = attendance.filter(a => a.evento_id === evt.id);
+    const present = records.filter(r => r.presente).length;
+    const anon    = evt.asistentes_anonimos ?? 0;
+    return { fecha: evt.fecha, total: present + anon, nuevos: records.filter(r => r.es_nuevo && r.presente).length + anon };
+  }, [events, attendance, compareB]);
 
   const fmtDate = (iso: string) => {
     const [, m, d] = iso.split('-');
@@ -344,109 +427,37 @@ export default function StatsDashboard({
       </div>
 
       {/* ── Comparison Tool ─────────────────────────────────────────────── */}
-      {(() => {
-        const statsA = getCompareStats(compareA.tipo, compareA.fecha);
-        const statsB = getCompareStats(compareB.tipo, compareB.fecha);
-        const trackA = ALL_TRACKS.find(t => t.id === compareA.tipo)!;
-        const trackB = ALL_TRACKS.find(t => t.id === compareB.tipo)!;
+      <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm space-y-4">
+        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <ArrowLeftRight className="w-4 h-4 text-indigo-600" />
+          <span>{es ? 'Comparar Servicios' : 'Compare Services'}</span>
+        </h3>
 
-        const CompareSelector = ({
-          side, value, onChange
-        }: {
-          side: 'A' | 'B';
-          value: { tipo: EventType; fecha: string };
-          onChange: (v: { tipo: EventType; fecha: string }) => void;
-        }) => {
-          const dates = datesForType(value.tipo);
-          const isA = side === 'A';
-          return (
-            <div className={`space-y-2 p-3 rounded-xl border ${isA ? 'bg-indigo-50 border-indigo-200' : 'bg-violet-50 border-violet-200'}`}>
-              <span className={`text-[10px] font-black uppercase tracking-widest ${isA ? 'text-indigo-700' : 'text-violet-700'}`}>
-                {es ? `Lado ${side}` : `Side ${side}`}
-              </span>
-              <select
-                value={value.tipo}
-                onChange={e => onChange({ tipo: e.target.value as EventType, fecha: '' })}
-                className="w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
-              >
-                {ALL_TRACKS.map(t => (
-                  <option key={t.id} value={t.id}>{es ? t.nameEs : t.nameEn}</option>
-                ))}
-              </select>
-              <select
-                value={value.fecha}
-                onChange={e => onChange({ ...value, fecha: e.target.value })}
-                className="w-full text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
-              >
-                <option value="">{es ? 'Último registro' : 'Latest record'}</option>
-                {dates.map(d => (
-                  <option key={d} value={d}>{fmtDate(d)} ({d})</option>
-                ))}
-              </select>
+        <div className="grid grid-cols-2 gap-3">
+          <CompareSelector side="A" value={compareA} onChange={setCompareA} dates={datesA} es={es} />
+          <CompareSelector side="B" value={compareB} onChange={setCompareB} dates={datesB} es={es} />
+        </div>
+
+        {statsA && statsB ? (
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-2 gap-3 text-[11px] font-semibold text-slate-500 text-center">
+              <div>{fmtDate(statsA.fecha)}</div>
+              <div>{fmtDate(statsB.fecha)}</div>
             </div>
-          );
-        };
-
-        const StatRow = ({ label, valA, valB }: { label: string; valA: number; valB: number }) => {
-          const max = Math.max(valA, valB, 1);
-          const pctA = (valA / max) * 100;
-          const pctB = (valB / max) * 100;
-          const aWins = valA > valB;
-          const bWins = valB > valA;
-          return (
-            <div className="grid grid-cols-[1fr_2fr_1fr] items-center gap-2">
-              <div className={`text-right text-sm font-extrabold ${aWins ? 'text-green-700' : 'text-slate-700'}`}>{valA}</div>
-              <div className="space-y-1">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center leading-none">{label}</div>
-                <div className="flex gap-1 h-3">
-                  <div className="flex-1 flex justify-end bg-slate-100 rounded-l-full overflow-hidden">
-                    <div className={`h-full rounded-l-full transition-all ${aWins ? 'bg-green-500' : 'bg-indigo-400'}`} style={{ width: `${pctA}%` }} />
-                  </div>
-                  <div className="flex-1 bg-slate-100 rounded-r-full overflow-hidden">
-                    <div className={`h-full rounded-r-full transition-all ${bWins ? 'bg-green-500' : 'bg-violet-400'}`} style={{ width: `${pctB}%` }} />
-                  </div>
-                </div>
-              </div>
-              <div className={`text-left text-sm font-extrabold ${bWins ? 'text-green-700' : 'text-slate-700'}`}>{valB}</div>
+            <div className="space-y-2.5">
+              <StatRow label={es ? 'Presentes' : 'Present'} valA={statsA.total}  valB={statsB.total}  />
+              <StatRow label={es ? 'Nuevos'    : 'New'}     valA={statsA.nuevos} valB={statsB.nuevos} />
             </div>
-          );
-        };
-
-        return (
-          <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <ArrowLeftRight className="w-4 h-4 text-indigo-600" />
-              <span>{es ? 'Comparar Servicios' : 'Compare Services'}</span>
-            </h3>
-
-            <div className="grid grid-cols-2 gap-3">
-              <CompareSelector side="A" value={compareA} onChange={setCompareA} />
-              <CompareSelector side="B" value={compareB} onChange={setCompareB} />
-            </div>
-
-            {statsA && statsB ? (
-              <div className="space-y-3 pt-1">
-                {/* Date labels */}
-                <div className="grid grid-cols-2 gap-3 text-[11px] font-semibold text-slate-500 text-center">
-                  <div>{fmtDate(statsA.fecha)}</div>
-                  <div>{fmtDate(statsB.fecha)}</div>
-                </div>
-                <div className="space-y-2.5">
-                  <StatRow label={es ? 'Presentes' : 'Present'} valA={statsA.total}    valB={statsB.total}    />
-                  <StatRow label={es ? 'Nuevos'    : 'New'}     valA={statsA.nuevos}   valB={statsB.nuevos}   />
-                </div>
-                <p className="text-[10px] text-slate-400 font-semibold text-center pt-1">
-                  {es ? 'Verde = mayor en esa categoría' : 'Green = higher in that category'}
-                </p>
-              </div>
-            ) : (
-              <div className="h-24 flex items-center justify-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                {es ? 'Sin datos para uno o ambos lados' : 'No data for one or both sides'}
-              </div>
-            )}
+            <p className="text-[10px] text-slate-400 font-semibold text-center pt-1">
+              {es ? 'Verde = mayor en esa categoría' : 'Green = higher in that category'}
+            </p>
           </div>
-        );
-      })()}
+        ) : (
+          <div className="h-24 flex items-center justify-center text-xs text-slate-400 font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            {es ? 'Sin datos para uno o ambos lados' : 'No data for one or both sides'}
+          </div>
+        )}
+      </div>
 
       {/* Alerts callout */}
       <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm font-medium">
