@@ -113,6 +113,7 @@ export const esTranslations = {
   alerts: "Alertas",
   birthdays: "Cumpleaños",
   calendar: "Calendario",
+  history: "Historial",
   config: "Configuración",
   logout: "Cerrar sesión",
 
@@ -280,6 +281,7 @@ export const enTranslations: typeof esTranslations = {
   alerts: "Alerts",
   birthdays: "Birthdays",
   calendar: "Calendar",
+  history: "History",
   config: "Configuration",
   logout: "Sign Out",
 

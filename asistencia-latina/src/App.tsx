@@ -12,9 +12,10 @@ import PeopleManager from './components/PeopleManager';
 import AlertsManager from './components/AlertsManager';
 import BirthdaysList from './components/BirthdaysList';
 import CalendarView from './components/CalendarView';
+import HistoryView from './components/HistoryView';
 import ConfigScreen from './components/ConfigScreen';
 
-import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Home, Menu, X, ArrowLeft, Sun, Moon, Calendar } from 'lucide-react';
+import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Home, Menu, X, ArrowLeft, Sun, Moon, Calendar, BookOpen } from 'lucide-react';
 
 export default function App() {
   const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -22,7 +23,7 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cl-dark-mode') === 'true');
   const [language, setLanguage] = useState<Language>('es');
   const [user, setUser] = useState<Usuario | null>(null);
-  const [activeSection, setActiveSection] = useState<'home' | 'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'config'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'history' | 'config'>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
 
@@ -332,6 +333,7 @@ export default function App() {
     { id: 'alerts', label: t.alerts, icon: AlertTriangle, badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
     { id: 'birthdays', label: t.birthdays, icon: Cake },
     { id: 'calendar', label: t.calendar, icon: Calendar },
+    { id: 'history', label: t.history, icon: BookOpen },
     { id: 'config', label: t.config, icon: Settings },
   ];
 
@@ -619,6 +621,16 @@ export default function App() {
               people={people}
               config={config}
               onNavigateToPeople={() => setActiveSection('people')}
+            />
+          )}
+
+          {activeSection === 'history' && (
+            <HistoryView
+              language={language}
+              people={people}
+              events={events}
+              attendance={attendance}
+              customTracks={customTracks}
             />
           )}
 
