@@ -13,7 +13,8 @@ interface AttendanceSheetProps {
     eventType: EventType,
     dateStr: string,
     presentIds: string[],
-    newIdsSinceSave: string[]
+    newIdsSinceSave: string[],
+    anonCount: number
   ) => void;
   initialEventType: EventType;
   username: string;
@@ -176,7 +177,7 @@ export default function AttendanceSheet({
     // We determine what "new" members were present
     const presentNewPeople = people.filter((p) => presentIds.includes(p.id) && p.estado === 'nuevo').map(p => p.id);
 
-    onSaveAttendanceBatch(selectedEventType, selectedDate, presentIds, presentNewPeople);
+    onSaveAttendanceBatch(selectedEventType, selectedDate, presentIds, presentNewPeople, anonCount);
 
     // Lock stats to show a beautiful daily summary
     setSummaryStats({

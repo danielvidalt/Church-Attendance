@@ -34,6 +34,7 @@ export interface Evento {
   tipo_evento: EventType;
   fecha: string; // YYYY-MM-DD
   creado_por: string; // user name
+  asistentes_anonimos?: number;
 }
 
 export interface Asistencia {

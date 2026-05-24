@@ -200,7 +200,8 @@ export default function App() {
     eventType: EventType,
     dateStr: string,
     presentIds: string[],
-    newIdsSinceSave: string[]
+    newIdsSinceSave: string[],
+    anonCount: number
   ) => {
     let matchedEvt = events.find((e) => e.tipo_evento === eventType && e.fecha === dateStr);
     let targetEventId = '';
@@ -208,6 +209,9 @@ export default function App() {
     if (matchedEvt) {
       targetEventId = matchedEvt.id;
       await db.deleteAsistenciasByEvento(targetEventId);
+      const updatedEvt: Evento = { ...matchedEvt, asistentes_anonimos: anonCount };
+      await db.upsertEvento(updatedEvt);
+      setEvents((prev) => prev.map((e) => e.id === targetEventId ? updatedEvt : e));
     } else {
       targetEventId = 'evt_' + Date.now();
       const newEvt: Evento = {
@@ -216,6 +220,7 @@ export default function App() {
         tipo_evento: eventType,
         fecha: dateStr,
         creado_por: user?.nombre ?? 'Admin',
+        asistentes_anonimos: anonCount,
       };
       await db.upsertEvento(newEvt);
       setEvents((prev) => [...prev, newEvt]);

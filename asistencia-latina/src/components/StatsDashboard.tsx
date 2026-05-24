@@ -49,24 +49,26 @@ export default function StatsDashboard({
     return TRACKS.map((track) => {
       const trackEvents = events.filter((e) => e.tipo_evento === track.id);
 
-      // Average attendance
+      // Average attendance (includes anonymous visitors)
       let avg = 0;
       if (trackEvents.length > 0) {
         const total = trackEvents.reduce((acc, evt) => {
-          return acc + attendance.filter((a) => a.evento_id === evt.id && a.presente).length;
+          const registered = attendance.filter((a) => a.evento_id === evt.id && a.presente).length;
+          return acc + registered + (evt.asistentes_anonimos ?? 0);
         }, 0);
         avg = Math.round((total / trackEvents.length) * 10) / 10;
       }
 
-      // New this month: asistencias with es_nuevo=true for this track this month
-      const thisMonthEventIds = trackEvents
-        .filter((e) => e.fecha.startsWith(currentMonthPrefix))
-        .map((e) => e.id);
-      const newThisMonth = new Set(
+      // New this month: registered new members + anonymous visitors this month
+      const thisMonthEvents = trackEvents.filter((e) => e.fecha.startsWith(currentMonthPrefix));
+      const thisMonthEventIds = thisMonthEvents.map((e) => e.id);
+      const registeredNewThisMonth = new Set(
         attendance
           .filter((a) => thisMonthEventIds.includes(a.evento_id) && a.es_nuevo && a.presente)
           .map((a) => a.persona_id)
       ).size;
+      const anonNewThisMonth = thisMonthEvents.reduce((acc, e) => acc + (e.asistentes_anonimos ?? 0), 0);
+      const newThisMonth = registeredNewThisMonth + anonNewThisMonth;
 
       return { ...track, avg, newThisMonth };
     });
@@ -79,7 +81,7 @@ export default function StatsDashboard({
       .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
       .map((evt) => {
         const presents = attendance.filter((a) => a.evento_id === evt.id && a.presente).length;
-        return { id: evt.id, date: evt.fecha, count: presents };
+        return { id: evt.id, date: evt.fecha, count: presents + (evt.asistentes_anonimos ?? 0) };
       });
   }, [events, attendance, chartTrack]);
 
