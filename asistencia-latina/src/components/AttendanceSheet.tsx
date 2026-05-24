@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, EventType, Evento, EventTrack } from '../types';
 import { Search, Calendar, CheckSquare, Plus, Save, Square, ClipboardCheck, Info, CheckCircle2 } from 'lucide-react';
 import NewPersonModal from './NewPersonModal';
@@ -75,6 +75,10 @@ export default function AttendanceSheet({
     setLastLoadedKey(activeKey);
   }
 
+  // Anonymous new visitor counter (resets on event/date change)
+  const [anonCount, setAnonCount] = useState(0);
+  useEffect(() => { setAnonCount(0); }, [selectedEventType, selectedDate]);
+
   // To confirm overwriting a record on save
   const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
@@ -83,6 +87,7 @@ export default function AttendanceSheet({
     new: number;
     regular: number;
     absent: number;
+    anon: number;
   } | null>(null);
 
   // Filter list of eligible members for this gender track
@@ -178,7 +183,8 @@ export default function AttendanceSheet({
       present: presentIds.length,
       new: presentNewPeople.length,
       regular: presentIds.length - presentNewPeople.length,
-      absent: eligiblePeople.length - presentIds.length
+      absent: eligiblePeople.length - presentIds.length,
+      anon: anonCount,
     });
 
     setSuccessToast(true);
@@ -270,6 +276,12 @@ export default function AttendanceSheet({
             <div className="border-l border-green-200/60 pl-3">
               {t.absents}: <span className="text-red-700 font-extrabold">{summaryStats.absent}</span>
             </div>
+            {summaryStats.anon > 0 && (
+              <div className="border-l border-green-200/60 pl-3">
+                {language === 'es' ? 'Sin registrar' : 'Unregistered'}:{' '}
+                <span className="text-amber-700 font-extrabold">{summaryStats.anon}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -361,8 +373,31 @@ export default function AttendanceSheet({
                 <span className="text-xs font-semibold text-slate-300">{t.absents}:</span>
                 <span className="text-sm font-black text-red-400">{liveStats.absent}</span>
               </div>
+
+              {/* Anonymous new visitor counter */}
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-amber-400">
+                  {language === 'es' ? 'Nuevos sin registrar' : 'Unregistered visitors'}
+                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    {language === 'es' ? 'Personas sin datos' : 'No info yet'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setAnonCount(c => Math.max(0, c - 1))}
+                      className="w-6 h-6 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-lg cursor-pointer transition-colors font-black text-sm"
+                    >−</button>
+                    <span className="text-lg font-black text-amber-300 min-w-[1.5rem] text-center">{anonCount}</span>
+                    <button
+                      onClick={() => setAnonCount(c => c + 1)}
+                      className="w-6 h-6 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-lg cursor-pointer transition-colors font-black text-sm"
+                    >+</button>
+                  </div>
+                </div>
+              </div>
             </div>
-            
+
             <button
               onClick={handleSaveAttempt}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/10 transition-all cursor-pointer mt-4"
