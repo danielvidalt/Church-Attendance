@@ -9,9 +9,10 @@ interface NewPersonModalProps {
   onClose: () => void;
   onSave: (newPerson: Persona, markPresent: boolean) => void;
   defaultEventType: EventType;
+  isSaving?: boolean;
 }
 
-export default function NewPersonModal({ language, onClose, onSave, defaultEventType }: NewPersonModalProps) {
+export default function NewPersonModal({ language, onClose, onSave, defaultEventType, isSaving = false }: NewPersonModalProps) {
   const t = language === 'es' ? esTranslations : enTranslations;
 
   const [nombreCompleto, setNombreCompleto] = useState('');
@@ -74,7 +75,7 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
       return;
     }
 
-    const uniqueId = 'p_new_' + Date.now();
+    const uniqueId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
     const todayStr = formatDate(new Date());
 
     const createdPerson: Persona = {
@@ -357,9 +358,10 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
             </button>
             <button
               type="submit"
-              className="px-4.5 py-2 text-xs font-bold bg-green-700 hover:bg-green-800 text-white rounded-xl shadow-md cursor-pointer transition-all"
+              disabled={isSaving}
+              className="px-4.5 py-2 text-xs font-bold bg-green-700 hover:bg-green-800 disabled:opacity-60 text-white rounded-xl shadow-md cursor-pointer transition-all"
             >
-              {t.saveAndMark}
+              {isSaving ? (language === 'es' ? 'Guardando...' : 'Saving...') : t.saveAndMark}
             </button>
           </div>
         </form>

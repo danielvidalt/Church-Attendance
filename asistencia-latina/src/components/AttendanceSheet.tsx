@@ -6,7 +6,7 @@ import NewPersonModal from './NewPersonModal';
 interface AttendanceSheetProps {
   language: Language;
   people: Persona[];
-  onAddNewPerson: (p: Persona) => void;
+  onAddNewPerson: (p: Persona) => Promise<void>;
   savedEvents: Evento[];
   savedAttendance: Asistencia[];
   onSaveAttendanceBatch: (
@@ -48,6 +48,8 @@ export default function AttendanceSheet({
   
   // Modal for new person
   const [isNewPersonModalOpen, setIsNewPersonModalOpen] = useState(false);
+  const [savingNewPerson, setSavingNewPerson] = useState(false);
+  const [newPersonError, setNewPersonError] = useState<string | null>(null);
 
   // Keep an in-memory tracking state of who is checked for the currently selected event & date
   // By default, let's load what was previously saved if matching record exists!
@@ -210,16 +212,20 @@ export default function AttendanceSheet({
     }
   };
 
-  const handleNewPersonCreated = (newPerson: Persona) => {
-    // 1. Add to main directory context
-    onAddNewPerson(newPerson);
-    // 2. Auto tick in our local tracker map
-    setLocalPresentMap((prev) => ({
-      ...prev,
-      [newPerson.id]: true
-    }));
-    // 3. Close Modal
-    setIsNewPersonModalOpen(false);
+  const handleNewPersonCreated = async (newPerson: Persona) => {
+    setSavingNewPerson(true);
+    setNewPersonError(null);
+    try {
+      await onAddNewPerson(newPerson);
+      setLocalPresentMap((prev) => ({ ...prev, [newPerson.id]: true }));
+      setIsNewPersonModalOpen(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar';
+      setNewPersonError(msg);
+      setTimeout(() => setNewPersonError(null), 6000);
+    } finally {
+      setSavingNewPerson(false);
+    }
   };
 
   return (
@@ -260,6 +266,13 @@ export default function AttendanceSheet({
           </button>
         </div>
       </div>
+
+      {newPersonError && (
+        <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-xs font-semibold flex items-center gap-2 animate-fade-in">
+          <span className="shrink-0 font-black text-red-600">✕</span>
+          {language === 'es' ? `No se pudo guardar la persona: ${newPersonError}` : `Could not save person: ${newPersonError}`}
+        </div>
+      )}
 
       {successToast && summaryStats && (
         <div className="p-4 bg-green-50 border border-green-200 text-green-950 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in relative overflow-hidden">
@@ -581,9 +594,10 @@ export default function AttendanceSheet({
       {isNewPersonModalOpen && (
         <NewPersonModal
           language={language}
-          onClose={() => setIsNewPersonModalOpen(false)}
+          onClose={() => { if (!savingNewPerson) setIsNewPersonModalOpen(false); }}
           onSave={handleNewPersonCreated}
           defaultEventType={selectedEventType}
+          isSaving={savingNewPerson}
         />
       )}
     </div>
