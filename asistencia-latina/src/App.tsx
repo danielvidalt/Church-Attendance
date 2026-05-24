@@ -522,12 +522,14 @@ export default function App() {
                 <span className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
                   ⚙️ {t.secundaryAccess}
                 </span>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {[
                     { id: 'people', titleEs: 'Integrantes', titleEn: 'Directory', count: people.length, icon: Users },
                     { id: 'stats', titleEs: 'Estadísticas', titleEn: 'Statistics', icon: TrendingUp },
                     { id: 'alerts', titleEs: 'Alertas', titleEn: 'Alerts', count: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined, icon: AlertTriangle, isAlert: true },
                     { id: 'birthdays', titleEs: 'Cumpleaños', titleEn: 'Birthdays', icon: Cake },
+                    { id: 'calendar', titleEs: 'Calendario', titleEn: 'Calendar', icon: Calendar },
+                    { id: 'history', titleEs: 'Historial', titleEn: 'History', icon: BookOpen },
                   ].map((sc) => {
                     const Icon = sc.icon;
                     return (
