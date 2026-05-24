@@ -103,7 +103,23 @@ export default function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Refresh data when the app returns to foreground after 30+ seconds away
+    let hiddenAt = 0;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible' && Date.now() - hiddenAt > 30_000) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) loadAllData();
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [loadAllData]);
 
   const t = language === 'es' ? esTranslations : enTranslations;
