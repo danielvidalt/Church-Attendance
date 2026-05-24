@@ -96,10 +96,10 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 font-sans">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
-        
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-900 to-indigo-850 p-5 text-white flex justify-between items-center">
+        <div className="bg-gradient-to-r from-blue-900 to-indigo-850 p-5 text-white flex justify-between items-center shrink-0">
           <div className="flex items-center gap-2.5">
             <UserPlus className="w-5 h-5 text-sky-400" />
             <h3 className="font-bold text-base tracking-tight">{t.newPersonTitle}</h3>
@@ -113,7 +113,7 @@ export default function NewPersonModal({ language, onClose, onSave, defaultEvent
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm text-slate-700">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm text-slate-700 overflow-y-auto">
           
           {/* Photo & Name Grid */}
           <div className="flex flex-col sm:flex-row gap-4 items-center bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
