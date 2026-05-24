@@ -112,8 +112,13 @@ export const esTranslations = {
   stats: "Estadísticas",
   alerts: "Alertas",
   birthdays: "Cumpleaños",
+  calendar: "Calendario",
   config: "Configuración",
   logout: "Cerrar sesión",
+
+  noEventsThisDay: "Sin registros este día",
+  attendanceDetail: "Detalle de asistencia",
+  backToDay: "← Volver",
 
   // Home Screen
   homeHeading: "¿Qué quieres registrar hoy?",
@@ -274,8 +279,13 @@ export const enTranslations: typeof esTranslations = {
   stats: "Statistics",
   alerts: "Alerts",
   birthdays: "Birthdays",
+  calendar: "Calendar",
   config: "Configuration",
   logout: "Sign Out",
+
+  noEventsThisDay: "No records for this day",
+  attendanceDetail: "Attendance detail",
+  backToDay: "← Back",
 
   // Home Screen
   homeHeading: "What would you like to record today?",
