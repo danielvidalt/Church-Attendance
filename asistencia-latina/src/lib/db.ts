@@ -47,6 +47,11 @@ export async function upsertEvento(e: Evento): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteEvento(id: string): Promise<void> {
+  const { error } = await supabase.from('eventos').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // ── Asistencias ───────────────────────────────────────────────────────────────
 
 export async function getAsistencias(): Promise<Asistencia[]> {

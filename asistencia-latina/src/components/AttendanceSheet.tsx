@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, EventType, Evento, EventTrack } from '../types';
-import { Search, Calendar, CheckSquare, Plus, Save, Square, ClipboardCheck, Info, CheckCircle2 } from 'lucide-react';
+import { Search, Calendar, CheckSquare, Plus, Save, Square, ClipboardCheck, Info, CheckCircle2, RotateCcw } from 'lucide-react';
 import NewPersonModal from './NewPersonModal';
 
 interface AttendanceSheetProps {
@@ -16,6 +16,7 @@ interface AttendanceSheetProps {
     newIdsSinceSave: string[],
     anonCount: number
   ) => void;
+  onResetCurrentEvent?: (eventId: string) => Promise<void>;
   initialEventType: EventType;
   username: string;
   showOnlySelectedTrack?: boolean;
@@ -31,6 +32,7 @@ export default function AttendanceSheet({
   savedEvents,
   savedAttendance,
   onSaveAttendanceBatch,
+  onResetCurrentEvent,
   initialEventType,
   username,
   showOnlySelectedTrack = false,
@@ -84,10 +86,13 @@ export default function AttendanceSheet({
   const [anonCount, setAnonCount] = useState(0);
   useEffect(() => {
     setAnonCount(matchedEvent?.asistentes_anonimos ?? 0);
+    setResetConfirm(false);
   }, [selectedEventType, selectedDate]);
 
   // To confirm overwriting a record on save
   const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
   const [summaryStats, setSummaryStats] = useState<{
     present: number;
@@ -409,6 +414,49 @@ export default function AttendanceSheet({
               <Save className="w-4 h-4" />
               <span>{t.saveAttendance}</span>
             </button>
+
+            {matchedEvent && onResetCurrentEvent && (
+              !resetConfirm ? (
+                <button
+                  onClick={() => setResetConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-300 text-xs font-bold rounded-xl transition-all cursor-pointer mt-2"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>{language === 'es' ? 'Resetear este registro' : 'Reset this record'}</span>
+                </button>
+              ) : (
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => setResetConfirm(false)}
+                    className="flex-1 py-2 bg-white/10 hover:bg-white/15 text-white/70 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    {language === 'es' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    disabled={resetting}
+                    onClick={async () => {
+                      if (!matchedEvent) return;
+                      setResetting(true);
+                      try {
+                        await onResetCurrentEvent(matchedEvent.id);
+                        setLastLoadedKey('');
+                        setAnonCount(0);
+                        setSummaryStats(null);
+                        setSuccessToast(false);
+                      } finally {
+                        setResetting(false);
+                        setResetConfirm(false);
+                      }
+                    }}
+                    className="flex-1 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    {resetting
+                      ? (language === 'es' ? 'Borrando...' : 'Deleting...')
+                      : (language === 'es' ? 'Sí, borrar' : 'Yes, delete')}
+                  </button>
+                </div>
+              )
+            )}
           </div>
         </div>
 

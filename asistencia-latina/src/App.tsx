@@ -262,6 +262,13 @@ export default function App() {
     setActiveSection('attendance');
   };
 
+  const handleResetCurrentEvent = async (eventId: string) => {
+    await db.deleteAsistenciasByEvento(eventId);
+    await db.deleteEvento(eventId);
+    setAttendance((prev) => prev.filter((a) => a.evento_id !== eventId));
+    setEvents((prev) => prev.filter((e) => e.id !== eventId));
+  };
+
   const handleResetAttendanceData = async () => {
     await db.resetAttendanceData();
     setEvents([]);
@@ -554,6 +561,7 @@ export default function App() {
               savedEvents={events}
               savedAttendance={attendance}
               onSaveAttendanceBatch={handleSaveAttendanceBatch}
+              onResetCurrentEvent={handleResetCurrentEvent}
               initialEventType={activeAttendanceCategory}
               username={user.nombre}
               showOnlySelectedTrack={showOnlySelectedTrack}
