@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, EventType, Evento, EventTrack } from '../types';
-import { Search, Calendar, CheckSquare, Plus, Save, Square, ClipboardCheck, Info, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Search, Calendar, CheckSquare, Plus, Save, Square, ClipboardCheck, Info, CheckCircle2, RotateCcw, Pencil } from 'lucide-react';
 import NewPersonModal from './NewPersonModal';
 
 interface AttendanceSheetProps {
@@ -89,8 +89,6 @@ export default function AttendanceSheet({
     setResetConfirm(false);
   }, [selectedEventType, selectedDate]);
 
-  // To confirm overwriting a record on save
-  const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
@@ -200,7 +198,6 @@ export default function AttendanceSheet({
     });
 
     setSuccessToast(true);
-    setShowOverwriteDialog(false);
 
     // Automatically dismiss toast after 5 seconds
     setTimeout(() => {
@@ -209,12 +206,7 @@ export default function AttendanceSheet({
   };
 
   const handleSaveAttempt = () => {
-    if (matchedEvent) {
-      // Warn them about overwriting already secured check for this date
-      setShowOverwriteDialog(true);
-    } else {
-      executeSave();
-    }
+    executeSave();
   };
 
   const handleNewPersonCreated = async (newPerson: Persona) => {
@@ -407,12 +399,19 @@ export default function AttendanceSheet({
               </div>
             </div>
 
+            {matchedEvent && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/15 rounded-lg mt-3">
+                <Pencil className="w-3 h-3 text-amber-400 shrink-0" />
+                <span className="text-[10px] font-bold text-amber-300">{t.editingRecord}</span>
+              </div>
+            )}
+
             <button
               onClick={handleSaveAttempt}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/10 transition-all cursor-pointer mt-4"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/10 transition-all cursor-pointer mt-3"
             >
-              <Save className="w-4 h-4" />
-              <span>{t.saveAttendance}</span>
+              {matchedEvent ? <Pencil className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              <span>{matchedEvent ? t.updateAttendance : t.saveAttendance}</span>
             </button>
 
             {matchedEvent && onResetCurrentEvent && (
@@ -605,30 +604,6 @@ export default function AttendanceSheet({
           </div>
         </div>
       </div>
-
-      {/* OVERWRITE CONFIRMATION DIALOG */}
-      {showOverwriteDialog && (
-        <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white p-6 rounded-2xl max-w-sm w-full border border-slate-200 shadow-2xl">
-            <h4 className="font-extrabold text-[#0a2540] text-base mb-1.5">{t.alreadySavedTitle}</h4>
-            <p className="text-xs text-slate-500 leading-relaxed font-semibold mb-6">{t.alreadySavedDesc}</p>
-            <div className="flex gap-2.5 justify-end">
-              <button
-                onClick={() => setShowOverwriteDialog(false)}
-                className="px-3.5 py-2 ring-1 ring-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 rounded-xl cursor-pointer"
-              >
-                {t.keepBtn}
-              </button>
-              <button
-                onClick={executeSave}
-                className="px-4 py-2 bg-blue-950 text-white hover:bg-black text-[11px] font-black rounded-xl text-xs hover:shadow-lg transition-all cursor-pointer"
-              >
-                {t.overwriteBtn}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal Slide */ }
       {isNewPersonModalOpen && (
