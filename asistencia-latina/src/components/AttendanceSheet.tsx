@@ -78,9 +78,11 @@ export default function AttendanceSheet({
     setLastLoadedKey(activeKey);
   }
 
-  // Anonymous new visitor counter (resets on event/date change)
+  // Anonymous new visitor counter — restores saved value on re-entry, resets to 0 for unsaved events
   const [anonCount, setAnonCount] = useState(0);
-  useEffect(() => { setAnonCount(0); }, [selectedEventType, selectedDate]);
+  useEffect(() => {
+    setAnonCount(matchedEvent?.asistentes_anonimos ?? 0);
+  }, [selectedEventType, selectedDate]);
 
   // To confirm overwriting a record on save
   const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
