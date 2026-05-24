@@ -353,7 +353,7 @@ export default function AttendanceSheet({
             <div className="space-y-2.5 divide-y divide-white/5">
               <div className="flex justify-between items-center pt-2">
                 <span className="text-xs font-semibold text-slate-300">{t.totalPresents}:</span>
-                <span className="text-lg font-black text-white">{liveStats.present}</span>
+                <span className="text-lg font-black text-white">{liveStats.present + anonCount}</span>
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="text-xs font-semibold text-slate-300">{t.regularPresents}:</span>
@@ -361,7 +361,7 @@ export default function AttendanceSheet({
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="text-xs font-semibold text-slate-300">{t.newPresents}:</span>
-                <span className="text-sm font-black text-green-400">{liveStats.new}</span>
+                <span className="text-sm font-black text-green-400">{liveStats.new + anonCount}</span>
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="text-xs font-semibold text-slate-300">{t.absents}:</span>
