@@ -268,20 +268,14 @@ export default function AttendanceSheet({
           </div>
           <div className="flex gap-4 bg-white/60 p-3 rounded-xl border border-green-100/50 self-start sm:self-center font-semibold text-xs text-slate-700">
             <div>
-              {t.totalPresents}: <span className="text-green-800 font-extrabold">{summaryStats.present}</span>
+              {t.totalPresents}: <span className="text-green-800 font-extrabold">{summaryStats.present + summaryStats.anon}</span>
             </div>
             <div className="border-l border-green-200/60 pl-3">
-              {t.newPresents}: <span className="text-teal-700 font-extrabold">{summaryStats.new}</span>
+              {t.newPresents}: <span className="text-teal-700 font-extrabold">{summaryStats.new + summaryStats.anon}</span>
             </div>
             <div className="border-l border-green-200/60 pl-3">
               {t.absents}: <span className="text-red-700 font-extrabold">{summaryStats.absent}</span>
             </div>
-            {summaryStats.anon > 0 && (
-              <div className="border-l border-green-200/60 pl-3">
-                {language === 'es' ? 'Sin registrar' : 'Unregistered'}:{' '}
-                <span className="text-amber-700 font-extrabold">{summaryStats.anon}</span>
-              </div>
-            )}
           </div>
         </div>
       )}
