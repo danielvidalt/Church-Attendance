@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, EventType } from '../types';
 import { calculateAlerts } from '../utils/attendance';
-import { TrendingUp, HeartHandshake, UserPlus, AlertTriangle, CalendarRange, Trash2, ArrowLeftRight } from 'lucide-react';
+import { TrendingUp, HeartHandshake, UserPlus, AlertTriangle, CalendarRange, Trash2, ArrowLeftRight, RefreshCw } from 'lucide-react';
 import { DEFAULT_CONFIG } from '../data/mockPeople';
 
 // ── Comparison sub-components (defined outside StatsDashboard for stable refs) ──
@@ -83,6 +83,7 @@ interface StatsDashboardProps {
   attendance: Asistencia[];
   onNavigateToAlerts?: () => void;
   onResetAttendanceData: () => Promise<void>;
+  onRefresh: () => Promise<void>;
 }
 
 const ALL_TRACKS = [
@@ -106,12 +107,14 @@ export default function StatsDashboard({
   attendance,
   onNavigateToAlerts,
   onResetAttendanceData,
+  onRefresh,
 }: StatsDashboardProps) {
   const t = language === 'es' ? esTranslations : enTranslations;
   const es = language === 'es';
 
   const [chartTrack, setChartTrack] = useState<EventType>('servicio_11');
   const [confirmReset, setConfirmReset] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [compareA, setCompareA] = useState<{ tipo: EventType; fecha: string }>({ tipo: 'servicio_11', fecha: '' });
   const [compareB, setCompareB] = useState<{ tipo: EventType; fecha: string }>({ tipo: 'servicio_6',  fecha: '' });
@@ -391,10 +394,24 @@ export default function StatsDashboard({
 
       {/* Bar Chart Comparison */}
       <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-sky-600" />
-          <span>{t.comparisonTitle}</span>
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-sky-600" />
+            <span>{t.comparisonTitle}</span>
+          </h3>
+          <button
+            onClick={async () => {
+              setRefreshing(true);
+              try { await onRefresh(); } finally { setRefreshing(false); }
+            }}
+            disabled={refreshing}
+            title={es ? 'Actualizar datos' : 'Refresh data'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            {es ? 'Actualizar' : 'Refresh'}
+          </button>
+        </div>
         <div className="space-y-3.5 pt-2 font-medium">
           {[
             { id: 'servicio_11' as EventType,    nameEs: 'Servicio 11am',       nameEn: 'Service 11am',       color: 'bg-indigo-600'  },
@@ -407,7 +424,8 @@ export default function StatsDashboard({
             let avg = 0;
             if (catEvts.length > 0) {
               const total = catEvts.reduce((acc, evt) =>
-                acc + attendance.filter((a) => a.evento_id === evt.id && a.presente).length, 0);
+                acc + attendance.filter((a) => a.evento_id === evt.id && a.presente).length
+                    + (evt.asistentes_anonimos ?? 0), 0);
               avg = Math.round((total / catEvts.length) * 10) / 10;
             }
             const percent = Math.min((avg / 40) * 100, 100);

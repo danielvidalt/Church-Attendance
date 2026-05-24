@@ -616,6 +616,7 @@ export default function App() {
               attendance={attendance}
               onNavigateToAlerts={() => setActiveSection('alerts')}
               onResetAttendanceData={handleResetAttendanceData}
+              onRefresh={loadAllData}
             />
           )}
 
