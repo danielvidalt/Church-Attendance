@@ -124,6 +124,7 @@ export default function App() {
   }, [loadAllData]);
 
   const t = language === 'es' ? esTranslations : enTranslations;
+  const es = language === 'es';
 
   const defaultTracks: EventTrack[] = [
     { id: 'servicio_11', titleEs: '11:00 am', titleEn: '11:00 am', labelEs: 'Servicio Domingo', labelEn: 'Sunday Morning service', type: 'servicio', active: true, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-indigo-600 hover:bg-slate-50' },
