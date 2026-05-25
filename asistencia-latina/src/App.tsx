@@ -363,7 +363,7 @@ export default function App() {
   return (
     <div className={`h-full flex flex-col font-sans overflow-hidden ${isDarkMode ? 'dark bg-slate-950 text-slate-100 selection:bg-indigo-900 selection:text-indigo-100' : 'bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900'}`}>
 
-      <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0" />
+      <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0 shadow-sm" />
 
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm sticky top-0 z-40 lg:hidden">
         <div className="flex items-center gap-2.5">
@@ -675,6 +675,7 @@ export default function App() {
               volunteerAreas={volunteerAreas}
               onAddVolunteerArea={handleAddVolunteerArea}
               onDeleteVolunteerArea={handleDeleteVolunteerArea}
+              onBack={() => { setActiveModule(null); setShowOnlySelectedTrack(false); setActiveSection('attendance'); }}
             />
           )}
 
