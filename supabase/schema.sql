@@ -15,8 +15,12 @@ CREATE TABLE IF NOT EXISTS personas (
   sexo                TEXT NOT NULL CHECK (sexo IN ('M', 'F')),
   notas               TEXT,
   foto_perfil         TEXT,
+  es_voluntario       BOOLEAN NOT NULL DEFAULT false,
   created_at          TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migración para bases de datos existentes
+ALTER TABLE personas ADD COLUMN IF NOT EXISTS es_voluntario BOOLEAN NOT NULL DEFAULT false;
 
 -- ── Eventos ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS eventos (

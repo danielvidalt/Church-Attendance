@@ -450,8 +450,16 @@ export default function PeopleManager({
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                            {person.telefono || (language === 'es' ? 'Sin teléfono' : 'No phone')}
+                          <div className="text-[11px] font-semibold mt-0.5">
+                            {person.es_voluntario ? (
+                              <span className="text-indigo-600">
+                                {es ? '★ Voluntario' : '★ Volunteer'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">
+                                {es ? 'Miembro' : 'Member'}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
