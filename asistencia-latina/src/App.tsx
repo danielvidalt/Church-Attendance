@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, Seguimiento, Configuracion, Usuario, EventType, MemberStatus, EventTrack, VolunteerArea } from './types';
+import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, Seguimiento, Configuracion, Usuario, EventType, MemberStatus, EventTrack, VolunteerArea, VolunteerAssignment, PrayerRequest } from './types';
 import { DEFAULT_CONFIG } from './data/mockPeople';
 import { calculateAlerts } from './utils/attendance';
 import { supabase } from './lib/supabase';
@@ -14,8 +14,11 @@ import BirthdaysList from './components/BirthdaysList';
 import CalendarView from './components/CalendarView';
 import HistoryView from './components/HistoryView';
 import ConfigScreen from './components/ConfigScreen';
+import VolunteersModule from './components/VolunteersModule';
+import PrayerRequestsModule from './components/PrayerRequestsModule';
+import JourneyModule from './components/JourneyModule';
 
-import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Menu, X, ArrowLeft, Sun, Moon, Calendar, BookOpen, Heart, MessageSquare } from 'lucide-react';
+import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Menu, X, ArrowLeft, Sun, Moon, Calendar, BookOpen, Heart, MessageSquare, CalendarCheck, Route } from 'lucide-react';
 
 export default function App() {
   const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -23,8 +26,8 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cl-dark-mode') === 'true');
   const [language, setLanguage] = useState<Language>('es');
   const [user, setUser] = useState<Usuario | null>(null);
-  const [activeModule, setActiveModule] = useState<null | 'personas' | 'attendance'>(null);
-  const [activeSection, setActiveSection] = useState<'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'history' | 'config'>('attendance');
+  const [activeModule, setActiveModule] = useState<null | 'personas' | 'attendance' | 'volunteers' | 'prayer' | 'followup'>(null);
+  const [activeSection, setActiveSection] = useState<'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'history' | 'config' | 'volunteers' | 'prayer' | 'journey'>('attendance');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
 
@@ -43,6 +46,8 @@ export default function App() {
   const [config, setConfig] = useState<Configuracion>(DEFAULT_CONFIG);
   const [customTracks, setCustomTracks] = useState<EventTrack[]>([]);
   const [volunteerAreas, setVolunteerAreas] = useState<VolunteerArea[]>([]);
+  const [volunteerAssignments, setVolunteerAssignments] = useState<VolunteerAssignment[]>([]);
+  const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
 
   const [activeAttendanceCategory, setActiveAttendanceCategory] = useState<EventType>('servicio_11');
   const [showOnlySelectedTrack, setShowOnlySelectedTrack] = useState(false);
@@ -50,27 +55,46 @@ export default function App() {
 
   // Load all data from Supabase
   const loadAllData = useCallback(async () => {
-    try {
-      const [fetchedPeople, fetchedEvents, fetchedAttendance, fetchedSeguimientos, fetchedConfig, fetchedTracks, fetchedVolunteerAreas] =
-        await Promise.all([
-          db.getPersonas(),
-          db.getEventos(),
-          db.getAsistencias(),
-          db.getSeguimientos(),
-          db.getConfiguracion(),
-          db.getEventTracks(),
-          db.getVolunteerAreas(),
-        ]);
-      setPeople(fetchedPeople);
-      setEvents(fetchedEvents);
-      setAttendance(fetchedAttendance);
-      setSeguimientos(fetchedSeguimientos);
-      setConfig(fetchedConfig ?? DEFAULT_CONFIG);
-      setCustomTracks(fetchedTracks);
-      setVolunteerAreas(fetchedVolunteerAreas);
-    } catch (err) {
-      console.error('Error loading data:', err);
-    }
+    const fallback = async <T,>(label: string, loader: () => Promise<T>, defaultValue: T): Promise<T> => {
+      try {
+        return await loader();
+      } catch (err) {
+        console.error(`Error loading ${label}:`, err);
+        return defaultValue;
+      }
+    };
+
+    const [
+      fetchedPeople,
+      fetchedEvents,
+      fetchedAttendance,
+      fetchedSeguimientos,
+      fetchedConfig,
+      fetchedTracks,
+      fetchedVolunteerAreas,
+      fetchedVolunteerAssignments,
+      fetchedPrayerRequests,
+    ] = await Promise.all([
+      fallback('personas', db.getPersonas, [] as Persona[]),
+      fallback('eventos', db.getEventos, [] as Evento[]),
+      fallback('asistencias', db.getAsistencias, [] as Asistencia[]),
+      fallback('seguimientos', db.getSeguimientos, [] as Seguimiento[]),
+      fallback('configuracion', db.getConfiguracion, null),
+      fallback('event_tracks', db.getEventTracks, [] as EventTrack[]),
+      fallback('volunteer_areas', db.getVolunteerAreas, [] as VolunteerArea[]),
+      fallback('volunteer_assignments', db.getVolunteerAssignments, [] as VolunteerAssignment[]),
+      fallback('prayer_requests', db.getPrayerRequests, [] as PrayerRequest[]),
+    ]);
+
+    setPeople(fetchedPeople);
+    setEvents(fetchedEvents);
+    setAttendance(fetchedAttendance);
+    setSeguimientos(fetchedSeguimientos);
+    setConfig(fetchedConfig ?? DEFAULT_CONFIG);
+    setCustomTracks(fetchedTracks);
+    setVolunteerAreas(fetchedVolunteerAreas);
+    setVolunteerAssignments(fetchedVolunteerAssignments);
+    setPrayerRequests(fetchedPrayerRequests);
   }, []);
 
   // Auth state listener — runs once on mount
@@ -100,7 +124,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         setUser(null);
-        setActiveSection('home');
+        setActiveSection('attendance');
       }
     });
 
@@ -147,7 +171,7 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setActiveSection('home');
+    setActiveSection('attendance');
   };
 
   const handleAddNewPerson = async (p: Persona) => {
@@ -214,6 +238,41 @@ export default function App() {
   const handleDeleteVolunteerArea = async (id: string) => {
     await db.deleteVolunteerArea(id);
     setVolunteerAreas((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleUpdateVolunteerArea = async (id: string, updates: Partial<VolunteerArea>) => {
+    await db.updateVolunteerArea(id, updates);
+    setVolunteerAreas((prev) => prev.map((area) => (area.id === id ? { ...area, ...updates } : area)));
+  };
+
+  const handleAddVolunteerAssignment = async (assignment: VolunteerAssignment) => {
+    await db.addVolunteerAssignment(assignment);
+    setVolunteerAssignments((prev) => [...prev, assignment]);
+  };
+
+  const handleUpdateVolunteerAssignment = async (id: string, updates: Partial<VolunteerAssignment>) => {
+    await db.updateVolunteerAssignment(id, updates);
+    setVolunteerAssignments((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
+  };
+
+  const handleDeleteVolunteerAssignment = async (id: string) => {
+    await db.deleteVolunteerAssignment(id);
+    setVolunteerAssignments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleAddPrayerRequest = async (request: PrayerRequest) => {
+    await db.addPrayerRequest(request);
+    setPrayerRequests((prev) => [request, ...prev]);
+  };
+
+  const handleUpdatePrayerRequest = async (id: string, updates: Partial<PrayerRequest>) => {
+    await db.updatePrayerRequest(id, updates);
+    setPrayerRequests((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
+  const handleDeletePrayerRequest = async (id: string) => {
+    await db.deletePrayerRequest(id);
+    setPrayerRequests((prev) => prev.filter((p) => p.id !== id));
   };
 
   const handleSaveAttendanceBatch = async (
@@ -357,6 +416,18 @@ export default function App() {
           { id: 'birthdays', label: t.birthdays, icon: Cake },
           { id: 'calendar', label: t.calendar, icon: Calendar },
           { id: 'history', label: t.history, icon: BookOpen },
+        ]
+      : activeModule === 'volunteers'
+      ? [
+          { id: 'volunteers', label: es ? 'Voluntarios' : 'Volunteers', icon: CalendarCheck },
+        ]
+      : activeModule === 'prayer'
+      ? [
+          { id: 'prayer', label: t.modulePrayer, icon: MessageSquare },
+        ]
+      : activeModule === 'followup'
+      ? [
+          { id: 'journey', label: t.moduleFollowUp, icon: Route },
         ]
       : [];
 
@@ -550,25 +621,22 @@ export default function App() {
                   <p className="text-xs text-slate-400 font-semibold mt-1">{t.moduleAttendanceDesc}</p>
                 </button>
 
-                {/* Módulos Próximamente */}
                 {([
-                  { title: t.moduleVolunteers, desc: t.moduleVolunteersDesc, icon: Heart },
-                  { title: t.modulePrayer, desc: t.modulePrayerDesc, icon: MessageSquare },
-                  { title: t.moduleFollowUp, desc: t.moduleFollowUpDesc, icon: TrendingUp },
-                ] as { title: string; desc: string; icon: React.ElementType }[]).map(({ title, desc, icon: Icon }) => (
-                  <div
+                  { id: 'volunteers', section: 'volunteers', title: t.moduleVolunteers, desc: t.moduleVolunteersDesc, icon: Heart },
+                  { id: 'prayer', section: 'prayer', title: t.modulePrayer, desc: t.modulePrayerDesc, icon: MessageSquare },
+                  { id: 'followup', section: 'journey', title: t.moduleFollowUp, desc: t.moduleFollowUpDesc, icon: TrendingUp },
+                ] as { id: 'volunteers' | 'prayer' | 'followup'; section: 'volunteers' | 'prayer' | 'journey'; title: string; desc: string; icon: React.ElementType }[]).map(({ id, section, title, desc, icon: Icon }) => (
+                  <button
                     key={title}
-                    className="p-6 rounded-2xl border border-slate-200 bg-slate-50 text-left relative select-none cursor-not-allowed"
+                    onClick={() => { setActiveModule(id); setActiveSection(section); }}
+                    className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
                   >
-                    <span className="absolute top-4 right-4 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
-                      {t.comingSoon}
-                    </span>
-                    <div className="w-11 h-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mb-4">
+                    <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <h3 className="text-sm font-extrabold text-slate-400">{title}</h3>
-                    <p className="text-xs text-slate-300 font-semibold mt-1">{desc}</p>
-                  </div>
+                    <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">{title}</h3>
+                    <p className="text-xs text-slate-400 font-semibold mt-1">{desc}</p>
+                  </button>
                 ))}
               </div>
             </div>
@@ -662,6 +730,47 @@ export default function App() {
             />
           )}
 
+          {activeModule === 'volunteers' && activeSection === 'volunteers' && (
+            <VolunteersModule
+              language={language}
+              people={people}
+              volunteerAreas={volunteerAreas}
+              assignments={volunteerAssignments}
+              registeredTracks={allTracks}
+              username={user.nombre}
+              onAddAssignment={handleAddVolunteerAssignment}
+              onUpdateAssignment={handleUpdateVolunteerAssignment}
+              onDeleteAssignment={handleDeleteVolunteerAssignment}
+              onOpenPeople={() => { setActiveModule('personas'); setActiveSection('people'); }}
+            />
+          )}
+
+          {activeModule === 'prayer' && activeSection === 'prayer' && (
+            <PrayerRequestsModule
+              language={language}
+              people={people}
+              requests={prayerRequests}
+              username={user.nombre}
+              onAddRequest={handleAddPrayerRequest}
+              onUpdateRequest={handleUpdatePrayerRequest}
+              onDeleteRequest={handleDeletePrayerRequest}
+            />
+          )}
+
+          {activeModule === 'followup' && activeSection === 'journey' && (
+            <JourneyModule
+              language={language}
+              people={people}
+              events={events}
+              attendance={attendance}
+              followUps={seguimientos}
+              username={user.nombre}
+              onAddFollowUp={handleAddNewSeguimientoLog}
+              onUpdateFollowUpStatus={handleUpdateSeguimientoStatus}
+              onOpenPeople={() => { setActiveModule('personas'); setActiveSection('people'); }}
+            />
+          )}
+
           {activeSection === 'config' && (
             <ConfigScreen
               language={language}
@@ -674,6 +783,7 @@ export default function App() {
               onDeleteCustomTrack={handleDeleteCustomTrack}
               volunteerAreas={volunteerAreas}
               onAddVolunteerArea={handleAddVolunteerArea}
+              onUpdateVolunteerArea={handleUpdateVolunteerArea}
               onDeleteVolunteerArea={handleDeleteVolunteerArea}
               onBack={() => { setActiveModule(null); setShowOnlySelectedTrack(false); setActiveSection('attendance'); }}
             />

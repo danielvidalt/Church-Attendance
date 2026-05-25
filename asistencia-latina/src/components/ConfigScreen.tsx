@@ -13,6 +13,7 @@ interface ConfigScreenProps {
   onDeleteCustomTrack: (id: string) => void;
   volunteerAreas: VolunteerArea[];
   onAddVolunteerArea: (area: VolunteerArea) => void;
+  onUpdateVolunteerArea: (id: string, updates: Partial<VolunteerArea>) => void;
   onDeleteVolunteerArea: (id: string) => void;
   onBack: () => void;
 }
@@ -28,6 +29,7 @@ export default function ConfigScreen({
   onDeleteCustomTrack,
   volunteerAreas,
   onAddVolunteerArea,
+  onUpdateVolunteerArea,
   onDeleteVolunteerArea,
   onBack,
 }: ConfigScreenProps) {
@@ -58,8 +60,15 @@ export default function ConfigScreen({
   // Volunteer Areas local states
   const [newAreaNameEs, setNewAreaNameEs] = useState('');
   const [newAreaNameEn, setNewAreaNameEn] = useState('');
+  const [newAreaContexto, setNewAreaContexto] = useState<NonNullable<VolunteerArea['contexto']>>('latina_domingo');
   const [newAreaPermiteNota, setNewAreaPermiteNota] = useState(false);
   const [volunteerAreaSuccess, setVolunteerAreaSuccess] = useState(false);
+
+  const areaContextLabels: Record<NonNullable<VolunteerArea['contexto']>, string> = {
+    iglesia: language === 'es' ? 'Iglesia general' : 'General church',
+    latina_domingo: language === 'es' ? 'Comunidad Latina (domingos)' : 'Latina Community (Sundays)',
+    latina_conexion: language === 'es' ? 'Comunidad Latina (Grupo de Conexión)' : 'Latina Community (Connection Group)',
+  };
 
   const handleCreateVolunteerArea = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,11 +78,13 @@ export default function ConfigScreen({
       nombre_es: newAreaNameEs.trim(),
       nombre_en: newAreaNameEn.trim() || newAreaNameEs.trim(),
       permite_nota: newAreaPermiteNota,
+      contexto: newAreaContexto,
       orden: volunteerAreas.length + 1,
     };
     onAddVolunteerArea(newArea);
     setNewAreaNameEs('');
     setNewAreaNameEn('');
+    setNewAreaContexto('latina_domingo');
     setNewAreaPermiteNota(false);
     setVolunteerAreaSuccess(true);
     setTimeout(() => setVolunteerAreaSuccess(false), 3000);
@@ -543,6 +554,20 @@ export default function ConfigScreen({
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                  {language === 'es' ? 'Clasificación del área' : 'Area classification'}
+                </label>
+                <select
+                  value={newAreaContexto}
+                  onChange={(e) => setNewAreaContexto(e.target.value as NonNullable<VolunteerArea['contexto']>)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                >
+                  <option value="iglesia">{areaContextLabels.iglesia}</option>
+                  <option value="latina_domingo">{areaContextLabels.latina_domingo}</option>
+                  <option value="latina_conexion">{areaContextLabels.latina_conexion}</option>
+                </select>
+              </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -571,10 +596,19 @@ export default function ConfigScreen({
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {volunteerAreas.map((area) => (
                     <div key={area.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold hover:bg-slate-100/40">
-                      <div className="truncate pr-1">
+                      <div className="min-w-0 flex-1 pr-2">
                         <span className="font-bold text-slate-800">
                           {language === 'es' ? area.nombre_es : area.nombre_en}
                         </span>
+                        <select
+                          value={area.contexto ?? 'iglesia'}
+                          onChange={(e) => onUpdateVolunteerArea(area.id, { contexto: e.target.value as NonNullable<VolunteerArea['contexto']> })}
+                          className="mt-1 w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        >
+                          <option value="iglesia">{areaContextLabels.iglesia}</option>
+                          <option value="latina_domingo">{areaContextLabels.latina_domingo}</option>
+                          <option value="latina_conexion">{areaContextLabels.latina_conexion}</option>
+                        </select>
                         {area.permite_nota && (
                           <span className="block text-[9px] text-indigo-500 font-bold uppercase mt-0.5">
                             {language === 'es' ? '+ nota' : '+ note'}

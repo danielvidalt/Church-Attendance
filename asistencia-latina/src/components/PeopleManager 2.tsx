@@ -400,13 +400,7 @@ export default function PeopleManager({
             {filteredPeople.length === 0 ? (
               <div className="p-12 text-center text-slate-400 font-medium">
                 <UserMinus className="w-12 h-12 mx-auto text-slate-300 mb-2.5" />
-                <span>
-                  {people.length === 0
-                    ? (language === 'es'
-                      ? 'La base de datos de personas está vacía en Supabase. Carga los miembros iniciales o agrega una persona al directorio.'
-                      : 'The people database is empty in Supabase. Load the initial members or add a person to the directory.')
-                    : t.noPeopleFound}
-                </span>
+                <span>{t.noPeopleFound}</span>
               </div>
             ) : (
               <div className="divide-y divide-slate-100 max-h-[580px] overflow-y-auto">

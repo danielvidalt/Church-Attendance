@@ -146,6 +146,8 @@ export default function AlertsManager({
                   const rowBg = isRed ? 'bg-red-50/10' : 'bg-amber-50/10';
                   const badgeBg = isRed ? 'bg-red-50 border-red-200 text-red-900' : 'bg-amber-50 border-amber-200 text-amber-900';
 
+                  const alertPerson = people.find((p) => p.id === item.personaId);
+
                   return (
                     <div
                       key={`${item.personaId}_${item.tipo}_${idx}`}
@@ -174,9 +176,9 @@ export default function AlertsManager({
 
                       {/* Action trigger group */}
                       <div className="flex gap-2 shrink-0">
-                        {item.telefono && (
+                        {alertPerson?.telefono && (
                           <a
-                            href={`tel:${item.telefono}`}
+                            href={`tel:${alertPerson.telefono}`}
                             className="p-2 bg-white ring-1 ring-slate-200 hover:ring-slate-350 text-slate-700 rounded-xl transition-all cursor-pointer shadow-sm hover:bg-slate-50 flex items-center justify-center"
                             title={language === 'es' ? 'Llamar por teléfono' : 'Make phone call'}
                           >

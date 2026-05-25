@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Persona, Evento, Asistencia, Seguimiento, Configuracion, EventTrack, VolunteerArea } from '../types';
+import type { Persona, Evento, Asistencia, Seguimiento, Configuracion, EventTrack, VolunteerArea, VolunteerAssignment, PrayerRequest } from '../types';
 
 // ── Personas ──────────────────────────────────────────────────────────────────
 
@@ -164,6 +164,7 @@ export async function getVolunteerAreas(): Promise<VolunteerArea[]> {
     nombre_es: row.nombre_es,
     nombre_en: row.nombre_en,
     permite_nota: row.permite_nota,
+    contexto: row.contexto ?? 'iglesia',
     orden: row.orden,
   })) as VolunteerArea[];
 }
@@ -174,12 +175,77 @@ export async function addVolunteerArea(a: VolunteerArea): Promise<void> {
     nombre_es: a.nombre_es,
     nombre_en: a.nombre_en,
     permite_nota: a.permite_nota,
+    contexto: a.contexto ?? 'iglesia',
     orden: a.orden,
   });
   if (error) throw error;
 }
 
+export async function updateVolunteerArea(id: string, updates: Partial<VolunteerArea>): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (updates.nombre_es !== undefined) payload.nombre_es = updates.nombre_es;
+  if (updates.nombre_en !== undefined) payload.nombre_en = updates.nombre_en;
+  if (updates.permite_nota !== undefined) payload.permite_nota = updates.permite_nota;
+  if (updates.contexto !== undefined) payload.contexto = updates.contexto;
+  if (updates.orden !== undefined) payload.orden = updates.orden;
+
+  const { error } = await supabase.from('volunteer_areas').update(payload).eq('id', id);
+  if (error) throw error;
+}
+
 export async function deleteVolunteerArea(id: string): Promise<void> {
   const { error } = await supabase.from('volunteer_areas').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Volunteer Assignments ─────────────────────────────────────────────────────
+
+export async function getVolunteerAssignments(): Promise<VolunteerAssignment[]> {
+  const { data, error } = await supabase.from('volunteer_assignments').select('*').order('fecha', { ascending: true });
+  if (error) {
+    if (error.code === '42P01' || error.code === '42703') return [];
+    throw error;
+  }
+  return (data ?? []) as VolunteerAssignment[];
+}
+
+export async function addVolunteerAssignment(a: VolunteerAssignment): Promise<void> {
+  const { error } = await supabase.from('volunteer_assignments').insert(a);
+  if (error) throw error;
+}
+
+export async function updateVolunteerAssignment(id: string, updates: Partial<VolunteerAssignment>): Promise<void> {
+  const { error } = await supabase.from('volunteer_assignments').update(updates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteVolunteerAssignment(id: string): Promise<void> {
+  const { error } = await supabase.from('volunteer_assignments').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Prayer Requests ───────────────────────────────────────────────────────────
+
+export async function getPrayerRequests(): Promise<PrayerRequest[]> {
+  const { data, error } = await supabase.from('prayer_requests').select('*').order('fecha', { ascending: false });
+  if (error) {
+    if (error.code === '42P01' || error.code === '42703') return [];
+    throw error;
+  }
+  return (data ?? []) as PrayerRequest[];
+}
+
+export async function addPrayerRequest(p: PrayerRequest): Promise<void> {
+  const { error } = await supabase.from('prayer_requests').insert(p);
+  if (error) throw error;
+}
+
+export async function updatePrayerRequest(id: string, updates: Partial<PrayerRequest>): Promise<void> {
+  const { error } = await supabase.from('prayer_requests').update(updates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deletePrayerRequest(id: string): Promise<void> {
+  const { error } = await supabase.from('prayer_requests').delete().eq('id', id);
   if (error) throw error;
 }

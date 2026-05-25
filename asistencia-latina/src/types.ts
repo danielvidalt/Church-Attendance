@@ -25,7 +25,37 @@ export interface VolunteerArea {
   nombre_es: string;
   nombre_en: string;
   permite_nota: boolean;
+  contexto?: 'iglesia' | 'latina_domingo' | 'latina_conexion';
   orden: number;
+}
+
+export interface VolunteerAssignment {
+  id: string;
+  persona_id: string;
+  area_id: string;
+  servicio_tipo?: EventType;
+  fecha: string; // YYYY-MM-DD
+  horario?: string;
+  estado: 'programado' | 'pendiente' | 'confirmado' | 'rechazado' | 'necesita_reemplazo' | 'completado';
+  notas?: string;
+  lider_responsable?: string;
+  created_at?: string;
+}
+
+export interface PrayerRequest {
+  id: string;
+  persona_id?: string;
+  solicitante_nombre: string;
+  fecha: string; // YYYY-MM-DD
+  categoria: string;
+  privacidad: 'publica' | 'privada' | 'confidencial';
+  descripcion: string;
+  estado: 'abierta' | 'seguimiento' | 'contestada' | 'cerrada';
+  responsable?: string;
+  fecha_seguimiento?: string;
+  resultado?: string;
+  orando_count: number;
+  created_at?: string;
 }
 
 export interface Evento {
