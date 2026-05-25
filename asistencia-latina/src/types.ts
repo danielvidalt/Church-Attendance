@@ -94,8 +94,8 @@ export type TranslationKey = keyof typeof esTranslations;
 
 export const esTranslations = {
   // Login
-  appName: "Asistencia Latina",
-  tagline: "Comunidad Latina Check-in",
+  appName: "Management Centre",
+  tagline: "Comunidad Latina",
   emailLabel: "Correo electrónico",
   passwordLabel: "Contraseña",
   enterBtn: "Entrar",
@@ -262,8 +262,8 @@ export const esTranslations = {
 
 export const enTranslations: typeof esTranslations = {
   // Login
-  appName: "Latina Attendance",
-  tagline: "Latina Community Check-in",
+  appName: "Management Centre",
+  tagline: "Latino Community",
   emailLabel: "Email address",
   passwordLabel: "Password",
   enterBtn: "Sign In",
