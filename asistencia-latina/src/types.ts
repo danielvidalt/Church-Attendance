@@ -257,7 +257,21 @@ export const esTranslations = {
   saveConfig: "Guardar configuración",
   configSaved: "Configuración actualizada con éxito",
   resetMockData: "Borrar Asistencias y Eventos",
-  resetMockConfirm: "Se eliminarán todos los registros de asistencia y eventos. Las personas del directorio no se verán afectadas. Esta acción no se puede deshacer."
+  resetMockConfirm: "Se eliminarán todos los registros de asistencia y eventos. Las personas del directorio no se verán afectadas. Esta acción no se puede deshacer.",
+
+  // Modules
+  backToModules: "Módulos",
+  comingSoon: "Próximamente",
+  modulePersonas: "Personas",
+  modulePersonasDesc: "Directorio y base de datos",
+  moduleAttendance: "Attendance",
+  moduleAttendanceDesc: "Registro y estadísticas",
+  moduleVolunteers: "Voluntarios",
+  moduleVolunteersDesc: "Disponibilidad y roles",
+  modulePrayer: "Peticiones de Oración",
+  modulePrayerDesc: "Seguimiento de peticiones",
+  moduleFollowUp: "Follow-Up",
+  moduleFollowUpDesc: "Crecimiento y seguimiento",
 };
 
 export const enTranslations: typeof esTranslations = {
@@ -425,5 +439,19 @@ export const enTranslations: typeof esTranslations = {
   saveConfig: "Apply Adjustments",
   configSaved: "Configuration updated successfully",
   resetMockData: "Clear Attendance & Events",
-  resetMockConfirm: "All attendance records and events will be deleted. People in the directory will not be affected. This cannot be undone."
+  resetMockConfirm: "All attendance records and events will be deleted. People in the directory will not be affected. This cannot be undone.",
+
+  // Modules
+  backToModules: "Modules",
+  comingSoon: "Coming Soon",
+  modulePersonas: "People",
+  modulePersonasDesc: "Directory and database",
+  moduleAttendance: "Attendance",
+  moduleAttendanceDesc: "Registration and statistics",
+  moduleVolunteers: "Volunteers",
+  moduleVolunteersDesc: "Availability and roles",
+  modulePrayer: "Prayer Requests",
+  modulePrayerDesc: "Prayer request tracking",
+  moduleFollowUp: "Follow-Up",
+  moduleFollowUpDesc: "Growth and follow-up",
 };

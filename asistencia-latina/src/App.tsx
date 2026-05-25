@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, Seguimiento, Configuracion, Usuario, EventType, MemberStatus, EventTrack, VolunteerArea } from './types';
 import { DEFAULT_CONFIG } from './data/mockPeople';
 import { calculateAlerts } from './utils/attendance';
@@ -15,7 +15,7 @@ import CalendarView from './components/CalendarView';
 import HistoryView from './components/HistoryView';
 import ConfigScreen from './components/ConfigScreen';
 
-import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Home, Menu, X, ArrowLeft, Sun, Moon, Calendar, BookOpen } from 'lucide-react';
+import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Menu, X, ArrowLeft, Sun, Moon, Calendar, BookOpen, Heart, MessageSquare } from 'lucide-react';
 
 export default function App() {
   const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -23,7 +23,8 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cl-dark-mode') === 'true');
   const [language, setLanguage] = useState<Language>('es');
   const [user, setUser] = useState<Usuario | null>(null);
-  const [activeSection, setActiveSection] = useState<'home' | 'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'history' | 'config'>('home');
+  const [activeModule, setActiveModule] = useState<null | 'personas' | 'attendance'>(null);
+  const [activeSection, setActiveSection] = useState<'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'history' | 'config'>('attendance');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
 
@@ -277,6 +278,7 @@ export default function App() {
   const handleQuickRegisterClick = (cat: EventType) => {
     setActiveAttendanceCategory(cat);
     setShowOnlySelectedTrack(true);
+    setActiveModule('attendance');
     setActiveSection('attendance');
   };
 
@@ -341,17 +343,21 @@ export default function App() {
     );
   }
 
-  const navItems = [
-    { id: 'home', label: t.home, icon: Home },
-    { id: 'attendance', label: t.registerAttendance, icon: ClipboardCheck },
-    { id: 'people', label: t.people, icon: Users },
-    { id: 'stats', label: t.stats, icon: TrendingUp },
-    { id: 'alerts', label: t.alerts, icon: AlertTriangle, badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
-    { id: 'birthdays', label: t.birthdays, icon: Cake },
-    { id: 'calendar', label: t.calendar, icon: Calendar },
-    { id: 'history', label: t.history, icon: BookOpen },
-    { id: 'config', label: t.config, icon: Settings },
-  ];
+  const navItems: { id: string; label: string; icon: React.ElementType; badge?: number }[] =
+    activeModule === 'personas'
+      ? [
+          { id: 'people', label: es ? 'Directorio' : 'Directory', icon: Users },
+        ]
+      : activeModule === 'attendance'
+      ? [
+          { id: 'attendance', label: t.registerAttendance, icon: ClipboardCheck },
+          { id: 'stats', label: t.stats, icon: TrendingUp },
+          { id: 'alerts', label: t.alerts, icon: AlertTriangle, badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
+          { id: 'birthdays', label: t.birthdays, icon: Cake },
+          { id: 'calendar', label: t.calendar, icon: Calendar },
+          { id: 'history', label: t.history, icon: BookOpen },
+        ]
+      : [];
 
   return (
     <div className={`h-full flex flex-col font-sans overflow-hidden ${isDarkMode ? 'dark bg-slate-950 text-slate-100 selection:bg-indigo-900 selection:text-indigo-100' : 'bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900'}`}>
@@ -414,8 +420,17 @@ export default function App() {
             </div>
 
             <div className="space-y-1 px-3 mt-4">
+              {activeModule !== null && (
+                <button
+                  onClick={() => { setActiveModule(null); setMobileMenuOpen(false); setShowOnlySelectedTrack(false); }}
+                  className="w-full flex items-center gap-2 px-4 py-2 mb-2 text-xs font-bold text-slate-400 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>{t.backToModules}</span>
+                </button>
+              )}
               {navItems.map((item) => {
-                const active = activeSection === item.id;
+                const active = activeSection === item.id && activeSection !== 'config';
                 const Icon = item.icon;
                 return (
                   <button
@@ -445,6 +460,15 @@ export default function App() {
           </div>
 
           <div className="p-3 border-t border-slate-100 space-y-1">
+            <button
+              onClick={() => { setActiveSection('config'); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
+                activeSection === 'config' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <Settings className={`w-4 h-4 ${activeSection === 'config' ? 'text-indigo-600' : 'text-slate-400'}`} />
+              <span>{t.config}</span>
+            </button>
             <button
               onClick={toggleDarkMode}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors cursor-pointer"
@@ -478,104 +502,78 @@ export default function App() {
             </div>
           )}
 
-          {activeSection !== 'home' && (
-            <div className="mb-6 flex items-center">
+          {(activeModule !== null || activeSection === 'config') && (
+            <div className="mb-6 flex items-center lg:hidden">
               <button
-                onClick={() => { setActiveSection('home'); setShowOnlySelectedTrack(false); }}
+                onClick={() => { setActiveModule(null); setShowOnlySelectedTrack(false); if (activeSection === 'config') setActiveSection('attendance'); }}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 rounded-xl border border-slate-200 shadow-sm text-xs font-bold transition-all hover:-translate-x-0.5"
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{language === 'es' ? 'Volver al Inicio' : 'Back to Home'}</span>
+                <span>{t.backToModules}</span>
               </button>
             </div>
           )}
 
-          {activeSection === 'home' && (
-            <div className="font-sans space-y-8 animate-fade-in text-slate-800">
-              <div className="bg-indigo-600 text-white p-6 sm:p-8 rounded-2xl relative overflow-hidden shadow-lg shadow-indigo-100/80">
-                <div className="absolute top-0 right-0 p-6 opacity-10 select-none">
-                  <span className="text-8xl">⛪</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">{t.homeHeading}</h2>
-                <p className="text-xs text-indigo-100 font-bold tracking-wide mt-2 max-w-lg leading-relaxed">
-                  {language === 'es'
-                    ? 'Lleva el seguimiento de la asistencia en cada servicio y grupo de la comunidad Latina.'
-                    : 'Track attendance across every service and group of the Latin community.'}
+          {activeModule === null && activeSection !== 'config' && (
+            <div className="animate-fade-in space-y-6">
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  {es ? 'Módulos' : 'Modules'}
+                </h2>
+                <p className="text-xs text-slate-400 font-semibold mt-1">
+                  {es ? 'Selecciona un módulo para comenzar' : 'Select a module to get started'}
                 </p>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Módulo Personas */}
+                <button
+                  onClick={() => { setActiveModule('personas'); setActiveSection('people'); }}
+                  className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
+                >
+                  <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">{t.modulePersonas}</h3>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">{t.modulePersonasDesc}</p>
+                </button>
 
-              <div className="space-y-3.5">
-                <span className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
-                  💡 {language === 'es' ? 'REGISTRO DIRECTO - ELIGE UN EVENTO' : 'DIRECT LOGS - CHOOSE THE HOST TRACK'}
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {allTracks.map((btn) => {
-                    if (btn.active === false) return null;
-                    return (
-                      <button
-                        key={btn.id}
-                        onClick={() => handleQuickRegisterClick(btn.id as EventType)}
-                        className={`p-5 rounded-2xl border text-left shadow-sm hover:shadow-md cursor-pointer transition-all hover:-translate-y-0.5 duration-150 flex flex-col justify-between h-36 ${btn.color}`}
-                      >
-                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block mb-2">
-                          {language === 'es' ? btn.labelEs : btn.labelEn}
-                        </span>
-                        <div className="mt-auto">
-                          <h3 className="text-base sm:text-lg font-black tracking-tight leading-none mb-1">
-                            {language === 'es' ? btn.titleEs : btn.titleEn}
-                          </h3>
-                          <span className="text-[10px] font-bold text-indigo-600 block">
-                            {language === 'es' ? 'Iniciar check-in →' : 'Launch check-in →'}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                {/* Módulo Attendance */}
+                <button
+                  onClick={() => { setActiveModule('attendance'); setActiveSection('attendance'); setShowOnlySelectedTrack(false); }}
+                  className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
+                >
+                  <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                    <ClipboardCheck className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">{t.moduleAttendance}</h3>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">{t.moduleAttendanceDesc}</p>
+                </button>
 
-              <div className="space-y-3.5 pt-4">
-                <span className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
-                  ⚙️ {t.secundaryAccess}
-                </span>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {[
-                    { id: 'people', titleEs: 'Integrantes', titleEn: 'Directory', count: people.length, icon: Users },
-                    { id: 'stats', titleEs: 'Estadísticas', titleEn: 'Statistics', icon: TrendingUp },
-                    { id: 'alerts', titleEs: 'Alertas', titleEn: 'Alerts', count: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined, icon: AlertTriangle, isAlert: true },
-                    { id: 'birthdays', titleEs: 'Cumpleaños', titleEn: 'Birthdays', icon: Cake },
-                    { id: 'calendar', titleEs: 'Calendario', titleEn: 'Calendar', icon: Calendar },
-                    { id: 'history', titleEs: 'Historial', titleEn: 'History', icon: BookOpen },
-                  ].map((sc) => {
-                    const Icon = sc.icon;
-                    return (
-                      <button
-                        key={sc.id}
-                        onClick={() => setActiveSection(sc.id as typeof activeSection)}
-                        className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md transition-all hover:bg-slate-50 flex items-center gap-3.5 cursor-pointer"
-                      >
-                        <div className={`p-2 rounded-lg ${sc.isAlert && sc.count ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>
-                          <Icon className="w-4 h-4 shrink-0" />
-                        </div>
-                        <div>
-                          <span className="block text-xs font-extrabold text-slate-900">
-                            {language === 'es' ? sc.titleEs : sc.titleEn}
-                          </span>
-                          {sc.count !== undefined && (
-                            <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">
-                              {sc.count} {language === 'es' ? 'registrados' : 'logged'}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Módulos Próximamente */}
+                {([
+                  { title: t.moduleVolunteers, desc: t.moduleVolunteersDesc, icon: Heart },
+                  { title: t.modulePrayer, desc: t.modulePrayerDesc, icon: MessageSquare },
+                  { title: t.moduleFollowUp, desc: t.moduleFollowUpDesc, icon: TrendingUp },
+                ] as { title: string; desc: string; icon: React.ElementType }[]).map(({ title, desc, icon: Icon }) => (
+                  <div
+                    key={title}
+                    className="p-6 rounded-2xl border border-slate-200 bg-slate-50 text-left relative select-none cursor-not-allowed"
+                  >
+                    <span className="absolute top-4 right-4 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                      {t.comingSoon}
+                    </span>
+                    <div className="w-11 h-11 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mb-4">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-sm font-extrabold text-slate-400">{title}</h3>
+                    <p className="text-xs text-slate-300 font-semibold mt-1">{desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {activeSection === 'attendance' && (
+          {activeModule === 'attendance' && activeSection === 'attendance' && (
             <AttendanceSheet
               language={language}
               people={people}
@@ -591,7 +589,7 @@ export default function App() {
             />
           )}
 
-          {activeSection === 'people' && (
+          {activeModule === 'personas' && activeSection === 'people' && (
             <PeopleManager
               language={language}
               people={people}
@@ -602,25 +600,25 @@ export default function App() {
               onUpdatePersonPhoto={handleUpdatePersonPhoto}
               onUpdatePersona={handleUpdatePersona}
               onDeletePersona={handleDeletePersona}
-              onOpenNewPersonSheet={() => setActiveSection('attendance')}
+              onOpenNewPersonSheet={() => { setActiveModule('attendance'); setActiveSection('attendance'); }}
               onAddExistingMember={handleAddNewPerson}
               volunteerAreas={volunteerAreas}
             />
           )}
 
-          {activeSection === 'stats' && (
+          {activeModule === 'attendance' && activeSection === 'stats' && (
             <StatsDashboard
               language={language}
               people={people}
               events={events}
               attendance={attendance}
-              onNavigateToAlerts={() => setActiveSection('alerts')}
+              onNavigateToAlerts={() => { setActiveModule('attendance'); setActiveSection('alerts'); }}
               onResetAttendanceData={handleResetAttendanceData}
               onRefresh={loadAllData}
             />
           )}
 
-          {activeSection === 'alerts' && (
+          {activeModule === 'attendance' && activeSection === 'alerts' && (
             <AlertsManager
               language={language}
               people={people}
@@ -634,16 +632,16 @@ export default function App() {
             />
           )}
 
-          {activeSection === 'birthdays' && (
+          {activeModule === 'attendance' && activeSection === 'birthdays' && (
             <BirthdaysList
               language={language}
               people={people}
               config={config}
-              onNavigateToPeople={() => setActiveSection('people')}
+              onNavigateToPeople={() => { setActiveModule('personas'); setActiveSection('people'); }}
             />
           )}
 
-          {activeSection === 'history' && (
+          {activeModule === 'attendance' && activeSection === 'history' && (
             <HistoryView
               language={language}
               people={people}
@@ -653,7 +651,7 @@ export default function App() {
             />
           )}
 
-          {activeSection === 'calendar' && (
+          {activeModule === 'attendance' && activeSection === 'calendar' && (
             <CalendarView
               language={language}
               people={people}
