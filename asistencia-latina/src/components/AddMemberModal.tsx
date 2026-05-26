@@ -7,7 +7,7 @@ import { COUNTRIES } from '../data/countries';
 interface AddMemberModalProps {
   language: Language;
   onClose: () => void;
-  onSave: (newPerson: Persona) => void;
+  onSave: (newPerson: Persona) => Promise<void>;
 }
 
 export default function AddMemberModal({ language, onClose, onSave }: AddMemberModalProps) {
@@ -23,6 +23,8 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
   const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(undefined);
   const [nacionalidad, setNacionalidad] = useState('');
   const [errorName, setErrorName] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,7 +53,7 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombreCompleto.trim()) { setErrorName(true); return; }
 
@@ -70,12 +72,19 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
       nacionalidad: nacionalidad || undefined,
     };
 
-    onSave(newPerson);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(newPerson);
+    } catch (err) {
+      setSaveError(es ? 'Error al guardar. Intenta de nuevo.' : 'Error saving. Please try again.');
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 font-sans">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-slate-900/50 flex justify-center items-center z-50 p-4 font-sans">
+      <div className="rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col" style={{ backgroundColor: '#ffffff', backdropFilter: 'none', WebkitBackdropFilter: 'none' }}>
 
         {/* Header */}
         <div className="bg-gradient-to-r from-emerald-800 to-teal-700 p-5 text-white flex justify-between items-center shrink-0">
@@ -280,19 +289,24 @@ export default function AddMemberModal({ language, onClose, onSave }: AddMemberM
           </div>
 
           {/* Buttons */}
+          {saveError && (
+            <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{saveError}</p>
+          )}
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold ring-1 ring-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl cursor-pointer"
+              disabled={saving}
+              className="px-4 py-2 text-xs font-bold ring-1 ring-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl cursor-pointer disabled:opacity-50"
             >
               {es ? 'Cancelar' : 'Cancel'}
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-md cursor-pointer transition-all"
+              disabled={saving}
+              className="px-5 py-2 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white rounded-xl shadow-md cursor-pointer transition-all"
             >
-              {es ? 'Guardar en Directorio' : 'Save to Directory'}
+              {saving ? (es ? 'Guardando...' : 'Saving...') : (es ? 'Guardar en Directorio' : 'Save to Directory')}
             </button>
           </div>
         </form>

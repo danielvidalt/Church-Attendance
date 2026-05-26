@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Language, esTranslations, enTranslations, Persona, Asistencia, Evento, MemberStatus, VolunteerArea } from '../types';
 import { Search, User, Phone, Cake, Calendar, CheckCircle, UserMinus, Plus, X, Camera, Users, Globe, Trash2, Heart, ChevronDown } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
@@ -15,7 +16,7 @@ interface PeopleManagerProps {
   onUpdatePersona: (id: string, updates: Partial<Persona>) => void;
   onDeletePersona: (id: string) => Promise<void>;
   onOpenNewPersonSheet: () => void;
-  onAddExistingMember: (person: Persona) => void;
+  onAddExistingMember: (person: Persona) => Promise<void>;
   volunteerAreas: VolunteerArea[];
 }
 
@@ -224,7 +225,7 @@ export default function PeopleManager({
   };
 
   return (
-    <div className="font-sans space-y-6 animate-fade-in">
+    <div className="font-sans h-full flex flex-col gap-6 animate-fade-in">
       
       {/* Top Header Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -259,10 +260,10 @@ export default function PeopleManager({
       </div>
 
       {/* Main Content Area */}
-      <div className="space-y-4">
-        
+      <div className="flex-1 flex flex-col min-h-0 gap-4">
+
         {/* Directory List with Toolbar */}
-        <div className="space-y-4">
+        <div className="flex-1 flex flex-col min-h-0 gap-4">
           
           {/* List Search & Filters Header */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -293,110 +294,86 @@ export default function PeopleManager({
             </div>
 
             {/* Filter chips */}
-            {openFilter && <div className="fixed inset-0 z-10" onClick={() => setOpenFilter(null)} />}
             <div className="flex flex-wrap gap-1.5">
-
-              {/* Voluntarios */}
-              <div className="relative">
-                <button onClick={() => setOpenFilter(openFilter === 'voluntario' ? null : 'voluntario')}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterVoluntario !== 'all' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                  <Heart className="w-3 h-3" />
-                  {es ? 'Voluntarios' : 'Volunteers'}
-                  <ChevronDown className="w-3 h-3" />
+              <button onClick={() => setOpenFilter(openFilter === 'voluntario' ? null : 'voluntario')}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterVoluntario !== 'all' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                <Heart className="w-3 h-3" />
+                {es ? 'Voluntarios' : 'Volunteers'}
+                <ChevronDown className={`w-3 h-3 transition-transform ${openFilter === 'voluntario' ? 'rotate-180' : ''}`} />
+              </button>
+              <button onClick={() => setOpenFilter(openFilter === 'genero' ? null : 'genero')}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterGenero.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                {es ? 'Género' : 'Gender'}
+                <ChevronDown className={`w-3 h-3 transition-transform ${openFilter === 'genero' ? 'rotate-180' : ''}`} />
+              </button>
+              {availableCountries.length > 0 && (
+                <button onClick={() => setOpenFilter(openFilter === 'pais' ? null : 'pais')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterPaises.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                  <Globe className="w-3 h-3" />
+                  {es ? 'País' : 'Country'}{filterPaises.length > 0 && ` (${filterPaises.length})`}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${openFilter === 'pais' ? 'rotate-180' : ''}`} />
                 </button>
+              )}
+              <button onClick={() => setOpenFilter(openFilter === 'estado' ? null : 'estado')}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterEstados.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                {es ? 'Estado' : 'Status'}{filterEstados.length > 0 && ` (${filterEstados.length})`}
+                <ChevronDown className={`w-3 h-3 transition-transform ${openFilter === 'estado' ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Inline filter options panel */}
+            {openFilter && (
+              <div className="pt-2.5 border-t border-slate-100">
                 {openFilter === 'voluntario' && (
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[160px]">
+                  <div className="flex flex-wrap gap-1.5">
                     {(['all', 'yes', 'no'] as const).map(v => (
                       <button key={v} onClick={() => { setFilterVoluntario(v); setOpenFilter(null); }}
-                        className={`w-full text-left px-3 py-1.5 text-[11px] font-bold hover:bg-slate-50 transition-colors ${filterVoluntario === v ? 'text-indigo-700' : 'text-slate-700'}`}>
-                        {filterVoluntario === v ? '✓ ' : ''}{v === 'all' ? (es ? 'Todos' : 'All') : v === 'yes' ? (es ? 'Solo voluntarios' : 'Volunteers only') : (es ? 'No voluntarios' : 'Non-volunteers')}
+                        className={`px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterVoluntario === v ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                        {v === 'all' ? (es ? 'Todos' : 'All') : v === 'yes' ? (es ? 'Solo voluntarios' : 'Volunteers only') : (es ? 'No voluntarios' : 'Non-volunteers')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {openFilter === 'genero' && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['F', 'M'] as const).map(g => (
+                      <button key={g} onClick={() => setFilterGenero(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterGenero.includes(g) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                        <span className={`w-2 h-2 rounded-full ${g === 'F' ? 'bg-pink-400' : 'bg-blue-400'}`} />
+                        {g === 'F' ? (es ? 'Femenino' : 'Female') : (es ? 'Masculino' : 'Male')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {openFilter === 'pais' && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableCountries.map(code => {
+                      const country = COUNTRIES.find(c => c.code === code);
+                      return (
+                        <button key={code} onClick={() => setFilterPaises(prev => prev.includes(code) ? prev.filter(x => x !== code) : [...prev, code])}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterPaises.includes(code) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                          {country?.flag} {es ? country?.nameEs : country?.nameEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {openFilter === 'estado' && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['activo', 'nuevo', 'inactivo'] as MemberStatus[]).map(s => (
+                      <button key={s} onClick={() => setFilterEstados(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                        className={`px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterEstados.includes(s) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+                        {s === 'activo' ? t.statusActive : s === 'nuevo' ? t.statusNew : t.statusInactive}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-
-              {/* Género */}
-              <div className="relative">
-                <button onClick={() => setOpenFilter(openFilter === 'genero' ? null : 'genero')}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterGenero.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                  {es ? 'Género' : 'Gender'}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                {openFilter === 'genero' && (
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[140px]">
-                    {(['F', 'M'] as const).map(g => (
-                      <label key={g} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
-                        <input type="checkbox" checked={filterGenero.includes(g)}
-                          onChange={() => setFilterGenero(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
-                          className="text-indigo-600 rounded cursor-pointer" />
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
-                          <span className={`w-2 h-2 rounded-full ${g === 'F' ? 'bg-pink-400' : 'bg-blue-400'}`} />
-                          {g === 'F' ? (es ? 'Femenino' : 'Female') : (es ? 'Masculino' : 'Male')}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* País */}
-              {availableCountries.length > 0 && (
-                <div className="relative">
-                  <button onClick={() => setOpenFilter(openFilter === 'pais' ? null : 'pais')}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterPaises.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                    <Globe className="w-3 h-3" />
-                    {es ? 'País' : 'Country'}{filterPaises.length > 0 && ` (${filterPaises.length})`}
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                  {openFilter === 'pais' && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[170px] max-h-48 overflow-y-auto">
-                      {availableCountries.map(code => {
-                        const country = COUNTRIES.find(c => c.code === code);
-                        return (
-                          <label key={code} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
-                            <input type="checkbox" checked={filterPaises.includes(code)}
-                              onChange={() => setFilterPaises(prev => prev.includes(code) ? prev.filter(x => x !== code) : [...prev, code])}
-                              className="text-indigo-600 rounded cursor-pointer" />
-                            <span className="text-[11px] font-bold text-slate-700">
-                              {country?.flag} {es ? country?.nameEs : country?.nameEn}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Estado */}
-              <div className="relative">
-                <button onClick={() => setOpenFilter(openFilter === 'estado' ? null : 'estado')}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl border transition-colors cursor-pointer ${filterEstados.length > 0 ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                  {es ? 'Estado' : 'Status'}{filterEstados.length > 0 && ` (${filterEstados.length})`}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                {openFilter === 'estado' && (
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 min-w-[140px]">
-                    {(['activo', 'nuevo', 'inactivo'] as MemberStatus[]).map(s => (
-                      <label key={s} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
-                        <input type="checkbox" checked={filterEstados.includes(s)}
-                          onChange={() => setFilterEstados(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
-                          className="text-indigo-600 rounded cursor-pointer" />
-                        <span className="text-[11px] font-bold text-slate-700">
-                          {s === 'activo' ? t.statusActive : s === 'nuevo' ? t.statusNew : t.statusInactive}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-            </div>
+            )}
           </div>
 
           {/* Core Directory Grid */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             {filteredPeople.length === 0 ? (
               <div className="p-12 text-center text-slate-400 font-medium">
                 <UserMinus className="w-12 h-12 mx-auto text-slate-300 mb-2.5" />
@@ -409,7 +386,7 @@ export default function PeopleManager({
                 </span>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 max-h-[580px] overflow-y-auto">
+              <div className="divide-y divide-slate-100 flex-1 overflow-y-auto">
                 {filteredPeople.map((person) => {
                   const isSelected = selectedPersonId === person.id;
                   
@@ -488,22 +465,23 @@ export default function PeopleManager({
       </div>
 
       {/* Selected Person Profile Floating Modal overlay */}
-      {showAddMemberModal && (
+      {showAddMemberModal && createPortal(
         <AddMemberModal
           language={language}
           onClose={() => setShowAddMemberModal(false)}
-          onSave={(person) => {
-            onAddExistingMember(person);
+          onSave={async (person) => {
+            await onAddExistingMember(person);
             setShowAddMemberModal(false);
           }}
-        />
+        />,
+        document.body
       )}
 
-      {selectedPerson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+      {selectedPerson && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 animate-fade-in">
           <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedPersonId(null)} />
 
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl animate-scale-up relative w-full max-w-md z-10 max-h-[90vh] flex flex-col">
+          <div className="border border-slate-200 rounded-3xl shadow-2xl animate-scale-up relative w-full max-w-md z-10 max-h-[90vh] flex flex-col" style={{ backgroundColor: '#ffffff', backdropFilter: 'none', WebkitBackdropFilter: 'none' }}>
 
             {/* Header fijo */}
             <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
@@ -820,7 +798,8 @@ export default function PeopleManager({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

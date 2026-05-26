@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Language, esTranslations, enTranslations, Persona, Evento, Asistencia, Seguimiento, Configuracion, Usuario, EventType, MemberStatus, EventTrack, VolunteerArea, VolunteerAssignment, PrayerRequest } from './types';
 import { DEFAULT_CONFIG } from './data/mockPeople';
 import { calculateAlerts } from './utils/attendance';
@@ -18,7 +18,11 @@ import VolunteersModule from './components/VolunteersModule';
 import PrayerRequestsModule from './components/PrayerRequestsModule';
 import JourneyModule from './components/JourneyModule';
 
-import { ClipboardCheck, Users, TrendingUp, AlertTriangle, Cake, Settings, LogOut, Menu, X, ArrowLeft, Sun, Moon, Calendar, BookOpen, Heart, MessageSquare, CalendarCheck, Route } from 'lucide-react';
+import { ClipboardCheck, Users, Settings, LogOut, Home, Menu, X, Sun, Moon, Heart, MessageSquare, TrendingUp } from 'lucide-react';
+
+type ActiveModule = 'home' | 'personas' | 'asistencia' | 'voluntarios' | 'oracion' | 'followup' | 'config';
+type PersonasTab = 'directorio' | 'cumpleanos' | 'alertas';
+type AsistenciaTab = 'registrar' | 'calendario' | 'historial' | 'estadisticas';
 
 export default function App() {
   const isInstalledApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -26,8 +30,9 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('cl-dark-mode') === 'true');
   const [language, setLanguage] = useState<Language>('es');
   const [user, setUser] = useState<Usuario | null>(null);
-  const [activeModule, setActiveModule] = useState<null | 'personas' | 'attendance' | 'volunteers' | 'prayer' | 'followup'>(null);
-  const [activeSection, setActiveSection] = useState<'attendance' | 'people' | 'stats' | 'alerts' | 'birthdays' | 'calendar' | 'history' | 'config' | 'volunteers' | 'prayer' | 'journey'>('attendance');
+  const [activeModule, setActiveModule] = useState<ActiveModule>('home');
+  const [personasTab, setPersonasTab] = useState<PersonasTab>('directorio');
+  const [asistenciaTab, setAsistenciaTab] = useState<AsistenciaTab>('registrar');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
 
@@ -46,58 +51,41 @@ export default function App() {
   const [config, setConfig] = useState<Configuracion>(DEFAULT_CONFIG);
   const [customTracks, setCustomTracks] = useState<EventTrack[]>([]);
   const [volunteerAreas, setVolunteerAreas] = useState<VolunteerArea[]>([]);
-  const [volunteerAssignments, setVolunteerAssignments] = useState<VolunteerAssignment[]>([]);
+  const [assignments, setAssignments] = useState<VolunteerAssignment[]>([]);
   const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
-
-  const [activeAttendanceCategory, setActiveAttendanceCategory] = useState<EventType>('servicio_11');
-  const [showOnlySelectedTrack, setShowOnlySelectedTrack] = useState(false);
   const [successToast, setSuccessToast] = useState<{ show: boolean; message: string } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Load all data from Supabase
   const loadAllData = useCallback(async () => {
-    const fallback = async <T,>(label: string, loader: () => Promise<T>, defaultValue: T): Promise<T> => {
-      try {
-        return await loader();
-      } catch (err) {
-        console.error(`Error loading ${label}:`, err);
-        return defaultValue;
-      }
-    };
-
-    const [
-      fetchedPeople,
-      fetchedEvents,
-      fetchedAttendance,
-      fetchedSeguimientos,
-      fetchedConfig,
-      fetchedTracks,
-      fetchedVolunteerAreas,
-      fetchedVolunteerAssignments,
-      fetchedPrayerRequests,
-    ] = await Promise.all([
-      fallback('personas', db.getPersonas, [] as Persona[]),
-      fallback('eventos', db.getEventos, [] as Evento[]),
-      fallback('asistencias', db.getAsistencias, [] as Asistencia[]),
-      fallback('seguimientos', db.getSeguimientos, [] as Seguimiento[]),
-      fallback('configuracion', db.getConfiguracion, null),
-      fallback('event_tracks', db.getEventTracks, [] as EventTrack[]),
-      fallback('volunteer_areas', db.getVolunteerAreas, [] as VolunteerArea[]),
-      fallback('volunteer_assignments', db.getVolunteerAssignments, [] as VolunteerAssignment[]),
-      fallback('prayer_requests', db.getPrayerRequests, [] as PrayerRequest[]),
-    ]);
-
-    setPeople(fetchedPeople);
-    setEvents(fetchedEvents);
-    setAttendance(fetchedAttendance);
-    setSeguimientos(fetchedSeguimientos);
-    setConfig(fetchedConfig ?? DEFAULT_CONFIG);
-    setCustomTracks(fetchedTracks);
-    setVolunteerAreas(fetchedVolunteerAreas);
-    setVolunteerAssignments(fetchedVolunteerAssignments);
-    setPrayerRequests(fetchedPrayerRequests);
+    try {
+      const [fetchedPeople, fetchedEvents, fetchedAttendance, fetchedSeguimientos, fetchedConfig, fetchedTracks, fetchedVolunteerAreas, fetchedAssignments, fetchedPrayer] =
+        await Promise.all([
+          db.getPersonas(),
+          db.getEventos(),
+          db.getAsistencias(),
+          db.getSeguimientos(),
+          db.getConfiguracion(),
+          db.getEventTracks(),
+          db.getVolunteerAreas(),
+          db.getVolunteerAssignments(),
+          db.getPrayerRequests(),
+        ]);
+      setPeople(fetchedPeople);
+      setEvents(fetchedEvents);
+      setAttendance(fetchedAttendance);
+      setSeguimientos(fetchedSeguimientos);
+      setConfig(fetchedConfig ?? DEFAULT_CONFIG);
+      setCustomTracks(fetchedTracks);
+      setVolunteerAreas(fetchedVolunteerAreas);
+      setAssignments(fetchedAssignments);
+      setPrayerRequests(fetchedPrayer);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('Error loading data:', err);
+      setLoadError(msg);
+    }
   }, []);
 
-  // Auth state listener — runs once on mount
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
@@ -106,7 +94,6 @@ export default function App() {
           .select('nombre, rol, idioma_preferido')
           .eq('id', session.user.id)
           .maybeSingle();
-
         const usr: Usuario = {
           id: session.user.id,
           nombre: profile?.nombre ?? session.user.email ?? 'Usuario',
@@ -119,16 +106,17 @@ export default function App() {
         await loadAllData();
       }
       setAppLoading(false);
+    }).catch(() => {
+      setAppLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         setUser(null);
-        setActiveSection('attendance');
+        setActiveModule('home');
       }
     });
 
-    // Refresh data when the app returns to foreground after 30+ seconds away
     let hiddenAt = 0;
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
@@ -140,7 +128,6 @@ export default function App() {
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
-
     return () => {
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
@@ -157,10 +144,9 @@ export default function App() {
     { id: 'grupo_hombres', titleEs: 'Grupo Hombres', titleEn: "Men's Group", labelEs: 'Chicos', labelEn: "Men's study & fellowship", type: 'grupo', active: config.grupos_activos.grupo_hombres, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-blue-500 hover:bg-slate-50' },
     { id: 'grupo_mujeres', titleEs: 'Grupo Mujeres', titleEn: "Women's Group", labelEs: 'Chicas', labelEn: "Women's study & fellowship", type: 'grupo', active: config.grupos_activos.grupo_mujeres, color: 'border-slate-200 bg-white text-slate-900 border-t-4 border-t-rose-500 hover:bg-slate-50' },
   ];
-
   const allTracks = [...defaultTracks, ...customTracks];
 
-  // ── Handlers ──────────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleLoginSuccess = async (usr: Usuario) => {
     setUser(usr);
@@ -171,47 +157,47 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setActiveSection('attendance');
+    setActiveModule('home');
   };
 
   const handleAddNewPerson = async (p: Persona) => {
     await db.addPersona(p);
-    setPeople((prev) => [p, ...prev]);
+    setPeople(prev => [p, ...prev]);
   };
 
   const handleUpdatePersonStatus = async (id: string, newStatus: MemberStatus) => {
     await db.updatePersona(id, { estado: newStatus });
-    setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, estado: newStatus } : p)));
+    setPeople(prev => prev.map(p => p.id === id ? { ...p, estado: newStatus } : p));
   };
 
   const handleAddPersonNote = async (id: string, noteText: string) => {
     await db.updatePersona(id, { notas: noteText });
-    setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, notas: noteText } : p)));
+    setPeople(prev => prev.map(p => p.id === id ? { ...p, notas: noteText } : p));
   };
 
   const handleUpdatePersonPhoto = async (id: string, photoBase64: string | undefined) => {
     await db.updatePersona(id, { foto_perfil: photoBase64 });
-    setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, foto_perfil: photoBase64 } : p)));
+    setPeople(prev => prev.map(p => p.id === id ? { ...p, foto_perfil: photoBase64 } : p));
   };
 
   const handleUpdatePersona = async (id: string, updates: Partial<Persona>) => {
     await db.updatePersona(id, updates);
-    setPeople((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    setPeople(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
   const handleDeletePersona = async (id: string) => {
     await db.deletePersona(id);
-    setPeople((prev) => prev.filter((p) => p.id !== id));
+    setPeople(prev => prev.filter(p => p.id !== id));
   };
 
   const handleAddNewSeguimientoLog = async (seg: Seguimiento) => {
     await db.addSeguimiento(seg);
-    setSeguimientos((prev) => [seg, ...prev]);
+    setSeguimientos(prev => [seg, ...prev]);
   };
 
   const handleUpdateSeguimientoStatus = async (id: string, status: 'pendiente' | 'contactado' | 'cerrado') => {
     await db.updateSeguimientoEstado(id, status);
-    setSeguimientos((prev) => prev.map((s) => (s.id === id ? { ...s, estado: status } : s)));
+    setSeguimientos(prev => prev.map(s => s.id === id ? { ...s, estado: status } : s));
   };
 
   const handleSaveConfig = async (updatedConfig: Configuracion) => {
@@ -222,75 +208,71 @@ export default function App() {
 
   const handleRegisterCustomTrack = async (track: EventTrack) => {
     await db.addEventTrack(track);
-    setCustomTracks((prev) => [...prev, track]);
+    setCustomTracks(prev => [...prev, track]);
   };
 
   const handleDeleteCustomTrack = async (id: string) => {
     await db.deleteEventTrack(id);
-    setCustomTracks((prev) => prev.filter((t) => t.id !== id));
+    setCustomTracks(prev => prev.filter(t => t.id !== id));
   };
 
   const handleAddVolunteerArea = async (area: VolunteerArea) => {
     await db.addVolunteerArea(area);
-    setVolunteerAreas((prev) => [...prev, area]);
-  };
-
-  const handleDeleteVolunteerArea = async (id: string) => {
-    await db.deleteVolunteerArea(id);
-    setVolunteerAreas((prev) => prev.filter((a) => a.id !== id));
+    setVolunteerAreas(prev => [...prev, area]);
   };
 
   const handleUpdateVolunteerArea = async (id: string, updates: Partial<VolunteerArea>) => {
     await db.updateVolunteerArea(id, updates);
-    setVolunteerAreas((prev) => prev.map((area) => (area.id === id ? { ...area, ...updates } : area)));
+    setVolunteerAreas(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
   };
 
-  const handleAddVolunteerAssignment = async (assignment: VolunteerAssignment) => {
+  const handleDeleteVolunteerArea = async (id: string) => {
+    await db.deleteVolunteerArea(id);
+    setVolunteerAreas(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleAddAssignment = async (assignment: VolunteerAssignment) => {
     await db.addVolunteerAssignment(assignment);
-    setVolunteerAssignments((prev) => [...prev, assignment]);
+    setAssignments(prev => [...prev, assignment]);
   };
 
-  const handleUpdateVolunteerAssignment = async (id: string, updates: Partial<VolunteerAssignment>) => {
+  const handleUpdateAssignment = async (id: string, updates: Partial<VolunteerAssignment>) => {
     await db.updateVolunteerAssignment(id, updates);
-    setVolunteerAssignments((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
+    setAssignments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
   };
 
-  const handleDeleteVolunteerAssignment = async (id: string) => {
+  const handleDeleteAssignment = async (id: string) => {
     await db.deleteVolunteerAssignment(id);
-    setVolunteerAssignments((prev) => prev.filter((a) => a.id !== id));
+    setAssignments(prev => prev.filter(a => a.id !== id));
   };
 
   const handleAddPrayerRequest = async (request: PrayerRequest) => {
     await db.addPrayerRequest(request);
-    setPrayerRequests((prev) => [request, ...prev]);
+    setPrayerRequests(prev => [request, ...prev]);
   };
 
   const handleUpdatePrayerRequest = async (id: string, updates: Partial<PrayerRequest>) => {
     await db.updatePrayerRequest(id, updates);
-    setPrayerRequests((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    setPrayerRequests(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
   };
 
   const handleDeletePrayerRequest = async (id: string) => {
     await db.deletePrayerRequest(id);
-    setPrayerRequests((prev) => prev.filter((p) => p.id !== id));
+    setPrayerRequests(prev => prev.filter(r => r.id !== id));
   };
 
   const handleSaveAttendanceBatch = async (
-    eventType: EventType,
-    dateStr: string,
-    presentIds: string[],
-    newIdsSinceSave: string[],
-    anonCount: number
+    eventType: EventType, dateStr: string,
+    presentIds: string[], newIdsSinceSave: string[], anonCount: number
   ) => {
-    let matchedEvt = events.find((e) => e.tipo_evento === eventType && e.fecha === dateStr);
+    let matchedEvt = events.find(e => e.tipo_evento === eventType && e.fecha === dateStr);
     let targetEventId = '';
-
     if (matchedEvt) {
       targetEventId = matchedEvt.id;
       await db.deleteAsistenciasByEvento(targetEventId);
       const updatedEvt: Evento = { ...matchedEvt, asistentes_anonimos: anonCount };
       await db.upsertEvento(updatedEvt);
-      setEvents((prev) => prev.map((e) => e.id === targetEventId ? updatedEvt : e));
+      setEvents(prev => prev.map(e => e.id === targetEventId ? updatedEvt : e));
     } else {
       targetEventId = 'evt_' + Date.now();
       const newEvt: Evento = {
@@ -302,18 +284,16 @@ export default function App() {
         asistentes_anonimos: anonCount,
       };
       await db.upsertEvento(newEvt);
-      setEvents((prev) => [...prev, newEvt]);
+      setEvents(prev => [...prev, newEvt]);
     }
-
-    const eligiblePeople = people.filter((p) => {
+    const eligiblePeople = people.filter(p => {
       if (p.estado === 'inactivo') return false;
       if (eventType === 'grupo_hombres' && p.sexo !== 'M') return false;
       if (eventType === 'grupo_mujeres' && p.sexo !== 'F') return false;
       return true;
     });
-
     let counter = Date.now();
-    const newRecords: Asistencia[] = eligiblePeople.map((p) => ({
+    const newRecords: Asistencia[] = eligiblePeople.map(p => ({
       id: 'att_' + counter++,
       persona_id: p.id,
       evento_id: targetEventId,
@@ -321,32 +301,17 @@ export default function App() {
       es_nuevo: p.estado === 'nuevo' || newIdsSinceSave.includes(p.id),
       fecha_registro: dateStr,
     }));
-
     await db.insertAsistencias(newRecords);
-    setAttendance((prev) => [
-      ...prev.filter((a) => a.evento_id !== targetEventId),
-      ...newRecords,
-    ]);
-
-    setSuccessToast({
-      show: true,
-      message: language === 'es' ? '¡Asistencia registrada y guardada exitosamente!' : 'Attendance successfully registered and stored!',
-    });
+    setAttendance(prev => [...prev.filter(a => a.evento_id !== targetEventId), ...newRecords]);
+    setSuccessToast({ show: true, message: es ? '¡Asistencia registrada y guardada exitosamente!' : 'Attendance successfully registered and stored!' });
     setTimeout(() => setSuccessToast(null), 4000);
-  };
-
-  const handleQuickRegisterClick = (cat: EventType) => {
-    setActiveAttendanceCategory(cat);
-    setShowOnlySelectedTrack(true);
-    setActiveModule('attendance');
-    setActiveSection('attendance');
   };
 
   const handleResetCurrentEvent = async (eventId: string) => {
     await db.deleteAsistenciasByEvento(eventId);
     await db.deleteEvento(eventId);
-    setAttendance((prev) => prev.filter((a) => a.evento_id !== eventId));
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    setAttendance(prev => prev.filter(a => a.evento_id !== eventId));
+    setEvents(prev => prev.filter(e => e.id !== eventId));
   };
 
   const handleResetAttendanceData = async () => {
@@ -357,35 +322,27 @@ export default function App() {
 
   const liveCareAlertsCount = calculateAlerts(people, events, attendance, config).length;
 
-  // ── Splash screen ─────────────────────────────────────────────────────────────
+  const goToModule = (mod: ActiveModule) => {
+    setActiveModule(mod);
+    setMobileMenuOpen(false);
+  };
+
+  // ── Splash / Loading / Auth guards ───────────────────────────────────────
 
   if (showSplash) {
     return (
-      <div
-        className={`h-full w-full cursor-pointer select-none ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
-        onClick={() => setShowSplash(false)}
-      >
-        <img
-          src={isDarkMode ? '/splash-dark.png' : '/splash-light.png'}
-          alt="Comunidad Latina"
-          className="w-full h-full object-cover"
-        />
+      <div className={`h-full w-full cursor-pointer select-none ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`} onClick={() => setShowSplash(false)}>
+        <img src={isDarkMode ? '/splash-dark.png' : '/splash-light.png'} alt="Comunidad Latina" className="w-full h-full object-cover" />
       </div>
     );
   }
-
-  // ── Loading screen ────────────────────────────────────────────────────────────
 
   if (appLoading) {
     return (
       <div className={`h-full flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
         <div className="text-center">
-          <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black font-mono text-base mx-auto mb-4 animate-pulse">
-            CL
-          </div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-            {language === 'es' ? 'Cargando...' : 'Loading...'}
-          </p>
+          <img src="/app-icon.png" alt="App Icon" className="w-16 h-16 rounded-2xl mx-auto mb-4 animate-pulse shadow-lg" />
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{es ? 'Cargando...' : 'Loading...'}</p>
         </div>
       </div>
     );
@@ -394,70 +351,247 @@ export default function App() {
   if (user === null) {
     return (
       <div className={isDarkMode ? 'dark h-full' : 'h-full'}>
-        <LoginScreen
-          language={language}
-          onLanguageChange={(lang) => setLanguage(lang)}
-          onLoginSuccess={handleLoginSuccess}
-        />
+        <LoginScreen language={language} onLanguageChange={setLanguage} onLoginSuccess={handleLoginSuccess} />
       </div>
     );
   }
 
-  const navItems: { id: string; label: string; icon: React.ElementType; badge?: number }[] =
-    activeModule === 'personas'
-      ? [
-          { id: 'people', label: es ? 'Directorio' : 'Directory', icon: Users },
-        ]
-      : activeModule === 'attendance'
-      ? [
-          { id: 'attendance', label: t.registerAttendance, icon: ClipboardCheck },
-          { id: 'stats', label: t.stats, icon: TrendingUp },
-          { id: 'alerts', label: t.alerts, icon: AlertTriangle, badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
-          { id: 'birthdays', label: t.birthdays, icon: Cake },
-          { id: 'calendar', label: t.calendar, icon: Calendar },
-          { id: 'history', label: t.history, icon: BookOpen },
-        ]
-      : activeModule === 'volunteers'
-      ? [
-          { id: 'volunteers', label: es ? 'Voluntarios' : 'Volunteers', icon: CalendarCheck },
-        ]
-      : activeModule === 'prayer'
-      ? [
-          { id: 'prayer', label: t.modulePrayer, icon: MessageSquare },
-        ]
-      : activeModule === 'followup'
-      ? [
-          { id: 'journey', label: t.moduleFollowUp, icon: Route },
-        ]
-      : [];
+  // ── Nav items (5 modules + config) ───────────────────────────────────────
+
+  const navModules = [
+    { id: 'home' as ActiveModule, label: t.home, icon: Home },
+    { id: 'personas' as ActiveModule, label: es ? 'Personas' : 'People', icon: Users, badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
+    { id: 'asistencia' as ActiveModule, label: t.registerAttendance, icon: ClipboardCheck },
+    { id: 'voluntarios' as ActiveModule, label: es ? 'Voluntarios' : 'Volunteers', icon: Heart },
+    { id: 'oracion' as ActiveModule, label: es ? 'Oración' : 'Prayer', icon: MessageSquare },
+    { id: 'followup' as ActiveModule, label: 'Follow-Up', icon: TrendingUp },
+  ];
+
+  // ── Tab bar component ─────────────────────────────────────────────────────
+
+  function TabBar({ tabs, active, onChange }: { tabs: { id: string; label: string; badge?: number }[]; active: string; onChange: (t: string) => void }) {
+    return (
+      <div className="mb-6 max-w-full overflow-x-auto">
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit min-w-full sm:min-w-0">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => onChange(tab.id)}
+              className={`relative px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex-1 sm:flex-none ${active === tab.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              {tab.label}
+              {tab.badge ? (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">{tab.badge}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Module content ────────────────────────────────────────────────────────
+
+  const renderModule = () => {
+    switch (activeModule) {
+      case 'home':
+        return (
+          <div className="animate-fade-in">
+            <div className="mb-8">
+              <h2 className="text-2xl font-black text-slate-900">{es ? 'Módulos' : 'Modules'}</h2>
+              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">{t.tagline}</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-5">
+              {([
+                { id: 'personas',   titleEs: 'Personas',    titleEn: 'People',      descEs: `${people.length} registrados`,           descEn: `${people.length} registered`,       icon: Users,         color: 'bg-indigo-600',  badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
+                { id: 'asistencia', titleEs: 'Registrar Asistencia', titleEn: 'Register Attendance', descEs: 'Registrar y revisar', descEn: 'Register & review', icon: ClipboardCheck, color: 'bg-blue-600' },
+                { id: 'voluntarios',titleEs: 'Voluntarios', titleEn: 'Volunteers',  descEs: 'Roles y disponibilidad',                 descEn: 'Roles & availability',               icon: Heart,         color: 'bg-rose-500' },
+                { id: 'oracion',    titleEs: 'Oración',     titleEn: 'Prayer',      descEs: `${prayerRequests.filter(r=>r.estado==='abierta').length} activas`, descEn: `${prayerRequests.filter(r=>r.estado==='abierta').length} active`, icon: MessageSquare, color: 'bg-purple-600' },
+                { id: 'followup',   titleEs: 'Follow-Up',   titleEn: 'Follow-Up',   descEs: `${seguimientos.filter(s=>s.estado==='pendiente').length} pendientes`, descEn: `${seguimientos.filter(s=>s.estado==='pendiente').length} pending`, icon: TrendingUp, color: 'bg-teal-600' },
+              ] as const).map(mod => {
+                const Icon = mod.icon;
+                return (
+                  <button
+                    key={mod.id}
+                    onClick={() => goToModule(mod.id)}
+                    className="group relative bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 text-left shadow-sm hover:shadow-xl transition-all duration-200 hover:-translate-y-1 cursor-pointer flex flex-col gap-3 sm:gap-5"
+                  >
+                    {'badge' in mod && mod.badge ? (
+                      <span className="absolute top-3 right-3 sm:top-4 sm:right-4 min-w-[20px] h-5 px-1 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">{mod.badge}</span>
+                    ) : null}
+                    <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center ${mod.color} shadow-md`}>
+                      <Icon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm sm:text-base font-extrabold text-slate-900">{es ? mod.titleEs : mod.titleEn}</p>
+                      <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5 sm:mt-1">{es ? mod.descEs : mod.descEn}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+
+      case 'personas':
+        return (
+          <div>
+            <TabBar
+              tabs={[
+                { id: 'directorio', label: es ? 'Directorio' : 'Directory' },
+                { id: 'cumpleanos', label: es ? 'Cumpleaños' : 'Birthdays' },
+                { id: 'alertas',    label: es ? 'Alertas' : 'Alerts', badge: liveCareAlertsCount > 0 ? liveCareAlertsCount : undefined },
+              ]}
+              active={personasTab}
+              onChange={t => setPersonasTab(t as PersonasTab)}
+            />
+            {personasTab === 'directorio' && (
+              <PeopleManager
+                language={language} people={people} events={events} attendance={attendance}
+                onUpdatePersonStatus={handleUpdatePersonStatus}
+                onAddPersonNote={handleAddPersonNote}
+                onUpdatePersonPhoto={handleUpdatePersonPhoto}
+                onUpdatePersona={handleUpdatePersona}
+                onDeletePersona={handleDeletePersona}
+                onOpenNewPersonSheet={() => { setActiveModule('asistencia'); setAsistenciaTab('registrar'); }}
+                onAddExistingMember={handleAddNewPerson}
+                volunteerAreas={volunteerAreas}
+              />
+            )}
+            {personasTab === 'cumpleanos' && (
+              <BirthdaysList language={language} people={people} config={config} onNavigateToPeople={() => setPersonasTab('directorio')} />
+            )}
+            {personasTab === 'alertas' && (
+              <AlertsManager
+                language={language} people={people} events={events} attendance={attendance}
+                config={config} seguimientos={seguimientos}
+                onAddNewSeguimiento={handleAddNewSeguimientoLog}
+                onUpdateSeguimientoStatus={handleUpdateSeguimientoStatus}
+                username={user.nombre}
+              />
+            )}
+          </div>
+        );
+
+      case 'asistencia':
+        return (
+          <div>
+            <TabBar
+              tabs={[
+                { id: 'registrar',    label: es ? 'Registrar' : 'Register' },
+                { id: 'calendario',   label: es ? 'Calendario' : 'Calendar' },
+                { id: 'historial',    label: es ? 'Historial' : 'History' },
+                { id: 'estadisticas', label: es ? 'Estadísticas' : 'Statistics' },
+              ]}
+              active={asistenciaTab}
+              onChange={t => setAsistenciaTab(t as AsistenciaTab)}
+            />
+            {asistenciaTab === 'registrar' && (
+              <AttendanceSheet
+                language={language} people={people}
+                onAddNewPerson={handleAddNewPerson}
+                savedEvents={events} savedAttendance={attendance}
+                onSaveAttendanceBatch={handleSaveAttendanceBatch}
+                onResetCurrentEvent={handleResetCurrentEvent}
+                initialEventType="servicio_11"
+                username={user.nombre}
+                showOnlySelectedTrack={false}
+                customTracks={customTracks}
+              />
+            )}
+            {asistenciaTab === 'calendario' && (
+              <CalendarView language={language} people={people} events={events} attendance={attendance} customTracks={customTracks} />
+            )}
+            {asistenciaTab === 'historial' && (
+              <HistoryView language={language} people={people} events={events} attendance={attendance} customTracks={customTracks} />
+            )}
+            {asistenciaTab === 'estadisticas' && (
+              <StatsDashboard
+                language={language} people={people} events={events} attendance={attendance}
+                onNavigateToAlerts={() => { setActiveModule('personas'); setPersonasTab('alertas'); }}
+                onResetAttendanceData={handleResetAttendanceData}
+                onRefresh={loadAllData}
+              />
+            )}
+          </div>
+        );
+
+      case 'voluntarios':
+        return (
+          <VolunteersModule
+            language={language} people={people} volunteerAreas={volunteerAreas}
+            assignments={assignments} registeredTracks={allTracks} username={user.nombre}
+            onAddAssignment={handleAddAssignment}
+            onUpdateAssignment={handleUpdateAssignment}
+            onDeleteAssignment={handleDeleteAssignment}
+            onOpenPeople={() => setActiveModule('personas')}
+          />
+        );
+
+      case 'oracion':
+        return (
+          <PrayerRequestsModule
+            language={language} people={people} requests={prayerRequests} username={user.nombre}
+            onAddRequest={handleAddPrayerRequest}
+            onUpdateRequest={handleUpdatePrayerRequest}
+            onDeleteRequest={handleDeletePrayerRequest}
+          />
+        );
+
+      case 'followup':
+        return (
+          <JourneyModule
+            language={language} people={people} events={events} attendance={attendance}
+            followUps={seguimientos} username={user.nombre}
+            onAddFollowUp={handleAddNewSeguimientoLog}
+            onUpdateFollowUpStatus={handleUpdateSeguimientoStatus}
+            onOpenPeople={() => setActiveModule('personas')}
+          />
+        );
+
+      case 'config':
+        return (
+          <ConfigScreen
+            language={language} config={config}
+            onSaveConfig={handleSaveConfig}
+            onResetDatabase={handleResetAttendanceData}
+            onLanguageChange={setLanguage}
+            customTracks={customTracks}
+            onRegisterCustomTrack={handleRegisterCustomTrack}
+            onDeleteCustomTrack={handleDeleteCustomTrack}
+            volunteerAreas={volunteerAreas}
+            onAddVolunteerArea={handleAddVolunteerArea}
+            onUpdateVolunteerArea={handleUpdateVolunteerArea}
+            onDeleteVolunteerArea={handleDeleteVolunteerArea}
+            onBack={() => setActiveModule('home')}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // ── Layout ────────────────────────────────────────────────────────────────
 
   return (
-    <div className={`h-full flex flex-col font-sans overflow-hidden ${isDarkMode ? 'dark bg-slate-950 text-slate-100 selection:bg-indigo-900 selection:text-indigo-100' : 'bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900'}`}>
+    <div className={`h-full flex flex-col font-sans overflow-hidden ${isDarkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
 
-      <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0 shadow-sm" />
+      <div className="h-1 bg-gradient-to-r from-indigo-600 to-violet-500 shrink-0" />
 
+      {/* Mobile header */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm sticky top-0 z-40 lg:hidden">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-extrabold font-mono text-xs shadow-sm select-none">
-            CL
+          <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm select-none shrink-0">
+            <img src="/app-icon.png" alt="App Icon" className="w-full h-full object-cover" />
           </div>
-          <div>
-            <h1 className="text-sm font-black text-slate-900 leading-none">{t.appName}</h1>
-            <span className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest mt-1 block">{t.tagline}</span>
-          </div>
+          <h1 className="text-sm font-black text-slate-900">{t.appName}</h1>
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={toggleDarkMode}
-            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-            title={isDarkMode ? 'Modo Claro' : 'Modo Oscuro'}
-          >
-            {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+          <button onClick={toggleDarkMode} className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer">
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-          >
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer">
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
@@ -465,24 +599,23 @@ export default function App() {
 
       <div className="flex-1 flex flex-col lg:flex-row relative min-h-0 overflow-hidden">
 
-        <nav
-          className={`lg:w-64 bg-white text-slate-900 flex flex-col justify-between shrink-0 absolute lg:relative inset-y-0 left-0 z-40 transform lg:transform-none transition-transform duration-300 lg:translate-x-0 border-r border-slate-200 ${
-            mobileMenuOpen ? 'translate-x-0 w-64' : '-translate-x-full'
-          }`}
-        >
-          <div className="flex-1 flex flex-col py-6">
+        {/* Sidebar */}
+        <nav className={`lg:w-60 bg-white flex flex-col justify-between shrink-0 absolute lg:relative inset-y-0 left-0 z-40 transform lg:transform-none transition-transform duration-300 lg:translate-x-0 border-r border-slate-200 ${mobileMenuOpen ? 'translate-x-0 w-64' : '-translate-x-full'}`}>
+          <div className="flex-1 flex flex-col py-6 overflow-y-auto">
+            {/* Logo */}
             <div className="hidden lg:flex items-center gap-3 px-6 pb-6 border-b border-slate-100">
-              <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black font-mono text-base select-none shadow-sm shadow-indigo-100">
-                CL
+              <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-sm select-none shrink-0">
+                <img src="/app-icon.png" alt="App Icon" className="w-full h-full object-cover" />
               </div>
-              <div className="truncate">
+              <div>
                 <h1 className="text-sm font-extrabold text-slate-900 leading-tight">{t.appName}</h1>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1.5 block">{t.tagline}</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.tagline}</span>
               </div>
             </div>
 
+            {/* User */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
                 {user.nombre.charAt(0)}
               </div>
               <div className="truncate">
@@ -491,303 +624,66 @@ export default function App() {
               </div>
             </div>
 
+            {/* Nav modules */}
             <div className="space-y-1 px-3 mt-4">
-              {activeModule !== null && (
-                <button
-                  onClick={() => { setActiveModule(null); setMobileMenuOpen(false); setShowOnlySelectedTrack(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 mb-2 text-xs font-bold text-slate-400 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>{t.backToModules}</span>
-                </button>
-              )}
-              {navItems.map((item) => {
-                const active = activeSection === item.id && activeSection !== 'config';
+              {navModules.map(item => {
                 const Icon = item.icon;
+                const active = activeModule === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      setActiveSection(item.id as typeof activeSection);
-                      setMobileMenuOpen(false);
-                      setShowOnlySelectedTrack(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      active ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
+                    onClick={() => goToModule(item.id)}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${active ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className={`w-4 h-4 ${active ? 'text-indigo-600' : 'text-slate-400'}`} />
                       <span>{item.label}</span>
                     </div>
-                    {item.badge && (
-                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-bold leading-none shrink-0 border border-amber-200">
-                        {item.badge}
-                      </span>
-                    )}
+                    {item.badge ? (
+                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-bold border border-amber-200">{item.badge}</span>
+                    ) : null}
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* Bottom actions */}
           <div className="p-3 border-t border-slate-100 space-y-1">
-            <button
-              onClick={() => { setActiveSection('config'); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
-                activeSection === 'config' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <Settings className={`w-4 h-4 ${activeSection === 'config' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            <button onClick={() => goToModule('config')} className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold rounded-xl transition-colors cursor-pointer ${activeModule === 'config' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+              <Settings className="w-4 h-4" />
               <span>{t.config}</span>
             </button>
-            <button
-              onClick={toggleDarkMode}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors cursor-pointer"
-            >
+            <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors cursor-pointer">
               {isDarkMode ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
-              <span>{isDarkMode ? (language === 'es' ? 'Modo Claro' : 'Light Mode') : (language === 'es' ? 'Modo Oscuro' : 'Dark Mode')}</span>
+              <span>{isDarkMode ? (es ? 'Modo Claro' : 'Light Mode') : (es ? 'Modo Oscuro' : 'Dark Mode')}</span>
             </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
-            >
+            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors cursor-pointer">
               <LogOut className="w-4 h-4" />
               <span>{t.logout}</span>
             </button>
           </div>
         </nav>
 
-        {mobileMenuOpen && (
-          <div
-            onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-30 lg:hidden"
-          />
-        )}
+        {mobileMenuOpen && <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-slate-900/30 z-30 lg:hidden" />}
 
+        {/* Main content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full overflow-y-auto overscroll-contain relative">
 
           {successToast?.show && (
-            <div className="fixed bottom-6 right-6 z-50 p-4.5 bg-indigo-950 text-white rounded-2xl shadow-xl flex items-center gap-3 border border-indigo-700/50 animate-bounce">
+            <div className="fixed bottom-6 right-6 z-50 p-4 bg-indigo-950 text-white rounded-2xl shadow-xl flex items-center gap-3 border border-indigo-700/50">
               <span className="text-lg">✨</span>
               <p className="text-xs font-bold tracking-wide">{successToast.message}</p>
             </div>
           )}
 
-          {(activeModule !== null || activeSection === 'config') && (
-            <div className="mb-6 flex items-center lg:hidden">
-              <button
-                onClick={() => { setActiveModule(null); setShowOnlySelectedTrack(false); if (activeSection === 'config') setActiveSection('attendance'); }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 rounded-xl border border-slate-200 shadow-sm text-xs font-bold transition-all hover:-translate-x-0.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{t.backToModules}</span>
-              </button>
+          {loadError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700">
+              ⚠️ Error cargando datos: {loadError}
             </div>
           )}
 
-          {activeModule === null && activeSection !== 'config' && (
-            <div className="animate-fade-in space-y-6">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                  {es ? 'Módulos' : 'Modules'}
-                </h2>
-                <p className="text-xs text-slate-400 font-semibold mt-1">
-                  {es ? 'Selecciona un módulo para comenzar' : 'Select a module to get started'}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Módulo Personas */}
-                <button
-                  onClick={() => { setActiveModule('personas'); setActiveSection('people'); }}
-                  className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
-                >
-                  <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">{t.modulePersonas}</h3>
-                  <p className="text-xs text-slate-400 font-semibold mt-1">{t.modulePersonasDesc}</p>
-                </button>
-
-                {/* Módulo Attendance */}
-                <button
-                  onClick={() => { setActiveModule('attendance'); setActiveSection('attendance'); setShowOnlySelectedTrack(false); }}
-                  className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
-                >
-                  <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
-                    <ClipboardCheck className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">{t.moduleAttendance}</h3>
-                  <p className="text-xs text-slate-400 font-semibold mt-1">{t.moduleAttendanceDesc}</p>
-                </button>
-
-                {([
-                  { id: 'volunteers', section: 'volunteers', title: t.moduleVolunteers, desc: t.moduleVolunteersDesc, icon: Heart },
-                  { id: 'prayer', section: 'prayer', title: t.modulePrayer, desc: t.modulePrayerDesc, icon: MessageSquare },
-                  { id: 'followup', section: 'journey', title: t.moduleFollowUp, desc: t.moduleFollowUpDesc, icon: TrendingUp },
-                ] as { id: 'volunteers' | 'prayer' | 'followup'; section: 'volunteers' | 'prayer' | 'journey'; title: string; desc: string; icon: React.ElementType }[]).map(({ id, section, title, desc, icon: Icon }) => (
-                  <button
-                    key={title}
-                    onClick={() => { setActiveModule(id); setActiveSection(section); }}
-                    className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm text-left hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
-                  >
-                    <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-700 transition-colors">{title}</h3>
-                    <p className="text-xs text-slate-400 font-semibold mt-1">{desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeModule === 'attendance' && activeSection === 'attendance' && (
-            <AttendanceSheet
-              language={language}
-              people={people}
-              onAddNewPerson={handleAddNewPerson}
-              savedEvents={events}
-              savedAttendance={attendance}
-              onSaveAttendanceBatch={handleSaveAttendanceBatch}
-              onResetCurrentEvent={handleResetCurrentEvent}
-              initialEventType={activeAttendanceCategory}
-              username={user.nombre}
-              showOnlySelectedTrack={showOnlySelectedTrack}
-              customTracks={customTracks}
-            />
-          )}
-
-          {activeModule === 'personas' && activeSection === 'people' && (
-            <PeopleManager
-              language={language}
-              people={people}
-              events={events}
-              attendance={attendance}
-              onUpdatePersonStatus={handleUpdatePersonStatus}
-              onAddPersonNote={handleAddPersonNote}
-              onUpdatePersonPhoto={handleUpdatePersonPhoto}
-              onUpdatePersona={handleUpdatePersona}
-              onDeletePersona={handleDeletePersona}
-              onOpenNewPersonSheet={() => { setActiveModule('attendance'); setActiveSection('attendance'); }}
-              onAddExistingMember={handleAddNewPerson}
-              volunteerAreas={volunteerAreas}
-            />
-          )}
-
-          {activeModule === 'attendance' && activeSection === 'stats' && (
-            <StatsDashboard
-              language={language}
-              people={people}
-              events={events}
-              attendance={attendance}
-              onNavigateToAlerts={() => { setActiveModule('attendance'); setActiveSection('alerts'); }}
-              onResetAttendanceData={handleResetAttendanceData}
-              onRefresh={loadAllData}
-            />
-          )}
-
-          {activeModule === 'attendance' && activeSection === 'alerts' && (
-            <AlertsManager
-              language={language}
-              people={people}
-              events={events}
-              attendance={attendance}
-              config={config}
-              seguimientos={seguimientos}
-              onAddNewSeguimiento={handleAddNewSeguimientoLog}
-              onUpdateSeguimientoStatus={handleUpdateSeguimientoStatus}
-              username={user.nombre}
-            />
-          )}
-
-          {activeModule === 'attendance' && activeSection === 'birthdays' && (
-            <BirthdaysList
-              language={language}
-              people={people}
-              config={config}
-              onNavigateToPeople={() => { setActiveModule('personas'); setActiveSection('people'); }}
-            />
-          )}
-
-          {activeModule === 'attendance' && activeSection === 'history' && (
-            <HistoryView
-              language={language}
-              people={people}
-              events={events}
-              attendance={attendance}
-              customTracks={customTracks}
-            />
-          )}
-
-          {activeModule === 'attendance' && activeSection === 'calendar' && (
-            <CalendarView
-              language={language}
-              people={people}
-              events={events}
-              attendance={attendance}
-              customTracks={customTracks}
-            />
-          )}
-
-          {activeModule === 'volunteers' && activeSection === 'volunteers' && (
-            <VolunteersModule
-              language={language}
-              people={people}
-              volunteerAreas={volunteerAreas}
-              assignments={volunteerAssignments}
-              registeredTracks={allTracks}
-              username={user.nombre}
-              onAddAssignment={handleAddVolunteerAssignment}
-              onUpdateAssignment={handleUpdateVolunteerAssignment}
-              onDeleteAssignment={handleDeleteVolunteerAssignment}
-              onOpenPeople={() => { setActiveModule('personas'); setActiveSection('people'); }}
-            />
-          )}
-
-          {activeModule === 'prayer' && activeSection === 'prayer' && (
-            <PrayerRequestsModule
-              language={language}
-              people={people}
-              requests={prayerRequests}
-              username={user.nombre}
-              onAddRequest={handleAddPrayerRequest}
-              onUpdateRequest={handleUpdatePrayerRequest}
-              onDeleteRequest={handleDeletePrayerRequest}
-            />
-          )}
-
-          {activeModule === 'followup' && activeSection === 'journey' && (
-            <JourneyModule
-              language={language}
-              people={people}
-              events={events}
-              attendance={attendance}
-              followUps={seguimientos}
-              username={user.nombre}
-              onAddFollowUp={handleAddNewSeguimientoLog}
-              onUpdateFollowUpStatus={handleUpdateSeguimientoStatus}
-              onOpenPeople={() => { setActiveModule('personas'); setActiveSection('people'); }}
-            />
-          )}
-
-          {activeSection === 'config' && (
-            <ConfigScreen
-              language={language}
-              config={config}
-              onSaveConfig={handleSaveConfig}
-              onResetDatabase={handleResetAttendanceData}
-              onLanguageChange={setLanguage}
-              customTracks={customTracks}
-              onRegisterCustomTrack={handleRegisterCustomTrack}
-              onDeleteCustomTrack={handleDeleteCustomTrack}
-              volunteerAreas={volunteerAreas}
-              onAddVolunteerArea={handleAddVolunteerArea}
-              onUpdateVolunteerArea={handleUpdateVolunteerArea}
-              onDeleteVolunteerArea={handleDeleteVolunteerArea}
-              onBack={() => { setActiveModule(null); setShowOnlySelectedTrack(false); setActiveSection('attendance'); }}
-            />
-          )}
+          {renderModule()}
 
         </main>
       </div>

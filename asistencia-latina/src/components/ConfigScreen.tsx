@@ -381,7 +381,7 @@ export default function ConfigScreen({
                 type="button"
                 onClick={() => setPrefLang('es')}
                 className={`flex-1 py-1.5 text-center border rounded-xl cursor-pointer ${
-                  prefLang === 'es' ? 'bg-indigo-50 border-indigo-200 text-indigo-950 font-black shadow-sm' : 'bg-white hover:bg-slate-50'
+                  prefLang === 'es' ? 'bg-indigo-600 border-indigo-600 text-white font-black shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 Español 🇪🇸
@@ -390,7 +390,7 @@ export default function ConfigScreen({
                 type="button"
                 onClick={() => setPrefLang('en')}
                 className={`flex-1 py-1.5 text-center border rounded-xl cursor-pointer ${
-                  prefLang === 'en' ? 'bg-indigo-50 border-indigo-200 text-indigo-950 font-black shadow-sm' : 'bg-white hover:bg-slate-50'
+                  prefLang === 'en' ? 'bg-indigo-600 border-indigo-600 text-white font-black shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 English 🇺🇸

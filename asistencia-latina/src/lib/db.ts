@@ -200,10 +200,12 @@ export async function deleteVolunteerArea(id: string): Promise<void> {
 
 // ── Volunteer Assignments ─────────────────────────────────────────────────────
 
+const TABLE_NOT_FOUND = ['42P01', '42703', 'PGRST205'];
+
 export async function getVolunteerAssignments(): Promise<VolunteerAssignment[]> {
   const { data, error } = await supabase.from('volunteer_assignments').select('*').order('fecha', { ascending: true });
   if (error) {
-    if (error.code === '42P01' || error.code === '42703') return [];
+    if (TABLE_NOT_FOUND.includes(error.code)) return [];
     throw error;
   }
   return (data ?? []) as VolunteerAssignment[];
@@ -229,7 +231,7 @@ export async function deleteVolunteerAssignment(id: string): Promise<void> {
 export async function getPrayerRequests(): Promise<PrayerRequest[]> {
   const { data, error } = await supabase.from('prayer_requests').select('*').order('fecha', { ascending: false });
   if (error) {
-    if (error.code === '42P01' || error.code === '42703') return [];
+    if (TABLE_NOT_FOUND.includes(error.code)) return [];
     throw error;
   }
   return (data ?? []) as PrayerRequest[];

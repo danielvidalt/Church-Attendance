@@ -199,14 +199,14 @@ export default function BirthdaysList({
 
       {/* Action panel to add birthday info to more people */}
       {onNavigateToPeople && (
-        <div className="p-5 bg-slate-950 rounded-2xl text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg shadow-slate-950/20 font-bold">
+        <div className="p-5 bg-white rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm font-bold">
           <div className="space-y-1">
-            <h4 className="text-sm tracking-tight">{language === 'es' ? '¿Falta información de cumpleaños?' : 'Missing birthday dates?'}</h4>
+            <h4 className="text-sm tracking-tight text-slate-900">{language === 'es' ? '¿Falta información de cumpleaños?' : 'Missing birthday dates?'}</h4>
             <p className="text-[11px] text-slate-400 font-semibold">{language === 'es' ? 'Ve al directorio de personas y edita el perfil de los miembros.' : 'Navigate to index profiles and update birth records.'}</p>
           </div>
           <button
             onClick={onNavigateToPeople}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs text-white transition-all cursor-pointer shadow-lg shadow-indigo-600/15"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs text-white transition-all cursor-pointer shadow-sm shadow-indigo-100"
           >
             <PlusCircle className="w-4 h-4" />
             <span>{language === 'es' ? 'Ir al Directorio' : 'Open Directory'}</span>

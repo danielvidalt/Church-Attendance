@@ -15,7 +15,7 @@ interface PeopleManagerProps {
   onUpdatePersona: (id: string, updates: Partial<Persona>) => void;
   onDeletePersona: (id: string) => Promise<void>;
   onOpenNewPersonSheet: () => void;
-  onAddExistingMember: (person: Persona) => void;
+  onAddExistingMember: (person: Persona) => Promise<void>;
   volunteerAreas: VolunteerArea[];
 }
 
@@ -486,8 +486,8 @@ export default function PeopleManager({
         <AddMemberModal
           language={language}
           onClose={() => setShowAddMemberModal(false)}
-          onSave={(person) => {
-            onAddExistingMember(person);
+          onSave={async (person) => {
+            await onAddExistingMember(person);
             setShowAddMemberModal(false);
           }}
         />

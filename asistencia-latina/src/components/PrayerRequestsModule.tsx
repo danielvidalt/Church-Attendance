@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, HeartHandshake, MessageSquareHeart, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, HeartHandshake, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { Language, Persona, PrayerRequest } from '../types';
 
 interface PrayerRequestsModuleProps {
@@ -81,7 +81,7 @@ export default function PrayerRequestsModule({
     <div className="font-sans space-y-6">
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-          <MessageSquareHeart className="w-5 h-5 text-rose-500" />
+          <MessageSquare className="w-5 h-5 text-purple-600" />
           <span>{es ? 'Peticiones de Oración' : 'Prayer Requests'}</span>
         </h2>
         <p className="text-xs font-semibold text-slate-500 mt-1">

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, ClipboardList, Route, UserPlus } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ClipboardList, TrendingUp, UserPlus } from 'lucide-react';
 import { Asistencia, Evento, Language, Persona, Seguimiento } from '../types';
 
 interface JourneyModuleProps {
@@ -128,7 +128,7 @@ export default function JourneyModule({
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Route className="w-5 h-5 text-indigo-600" />
+            <TrendingUp className="w-5 h-5 text-teal-600" />
             <span>{es ? 'Follow-up + Journey' : 'Follow-up + Journey'}</span>
           </h2>
           <p className="text-xs font-semibold text-slate-500 mt-1">
